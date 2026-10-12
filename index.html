@@ -1,0 +1,1330 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Étude sur la mémoire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Oswald:wght@400;500;600&display=swap">
+<style>
+/* Plateforme d'étude (sobre) pour l'information et l'accueil ; laboratoire en noir et blanc, d'après les plans du film
+   « Obedience » (1962), pour la séance. Thème clair unique, choisi délibérément : le site est une page d'expérience. */
+:root {
+  --bg: #E9E7E2; --paper: #FFFFFF; --ink: #1D1F22; --muted: #5F6368; --line: #D3D0C9; --soft: #F1EFEA;
+  --accent: #2F3B4A; --sun: #F2C230; --red: #D3221B; --blue: #3F7FE0;
+  --panel: #D9D9D4; --panel-hi: #EEEEE9; --panel-lo: #B9B9B3; --engrave: #2A2A28;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-plate: "Oswald", "Arial Narrow", "Helvetica Neue", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+button { font: inherit; cursor: pointer; color: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+/* ===== Barre ===== */
+.bar { background: var(--paper); border-bottom: 1px solid var(--line); }
+.bar .inner { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 20px; flex-wrap: wrap; }
+.brand { font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.brand .sq { width: 22px; height: 22px; border-radius: 5px; background: var(--accent); display: grid; place-items: center; }
+.brand .sq::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.brand small { font-family: var(--font-mono); font-weight: 400; font-size: 12px; color: var(--muted); }
+.steps { display: flex; gap: 5px; align-items: center; font-size: 13px; color: var(--muted); }
+.steps span { margin-right: 6px; }
+.steps i { width: 18px; height: 4px; border-radius: 4px; background: var(--line); }
+.steps i.done { background: var(--accent); }
+
+/* ===== Pages d'information ===== */
+.page { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 28px; }
+.page h1 { font-size: clamp(24px, 3.2vw, 30px); line-height: 1.2; margin: 0 0 10px; text-wrap: balance; }
+.page h2 { font-size: 15px; margin: 0 0 6px; }
+.page p { margin: 0 0 12px; max-width: 66ch; }
+.page section { margin-top: 18px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+.lead { color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: 14px; }
+.todo { background: #FFF3B0; padding: 0 4px; border-radius: 3px; }
+.cer-box { margin: 18px 0; padding: 14px 16px; border-radius: 10px; background: var(--soft); display: grid; gap: 4px; font-size: 15px; }
+.btn { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 12px 20px; font-weight: 600; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-quiet { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 12px 20px; }
+.consent-form { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 22px; }
+.consent-form label { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: 15px; cursor: pointer; }
+.consent-form input { margin-top: 4px; accent-color: var(--accent); }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.field { display: grid; gap: 6px; margin: 18px 0; max-width: 360px; }
+.field label { font-weight: 600; font-size: 14px; }
+.field input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.field small { color: var(--muted); font-size: 13px; }
+.voices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 560px; }
+.voice { border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--paper); text-align: left; }
+.voice[aria-pressed="true"] { border-color: var(--accent); background: var(--soft); }
+.voice b { display: block; font-size: 15px; } .voice small { font-size: 12.5px; color: var(--muted); }
+.voice .play { border: 0; border-radius: 7px; padding: 5px 10px; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; flex: none; }
+.waiting { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 14px 16px; background: var(--soft); border-radius: 10px; font-size: 15px; }
+.spinner { width: 20px; height: 20px; border-radius: 50%; border: 3px solid #2F3B4A40; border-top-color: var(--accent); animation: spin .9s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) { .voices { grid-template-columns: 1fr; } .card { padding: 20px; } }
+
+/* ===== Laboratoire ===== */
+.lab { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; padding: 14px; max-width: 1500px; margin: 0 auto; min-height: calc(100vh - 50px); }
+.stage { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.scene { margin: 0; background: #111; border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 4 / 3; max-height: calc(100vh - 120px); }
+.scene img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1) contrast(1.05); transition: opacity .6s; }
+.scene img.fade { opacity: 0; }
+.scene::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45)); }
+.scene figcaption { position: absolute; left: 16px; right: 16px; bottom: 14px; z-index: 1; color: #fff; font-size: 15px; font-style: italic; text-shadow: 0 1px 3px #000; max-width: 70ch; }
+.room { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 78px); position: sticky; top: 14px; overflow: hidden; }
+.people { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; border-bottom: 1px solid var(--line); }
+.person { display: grid; justify-items: center; gap: 3px; text-align: center; font-size: 12px; color: var(--muted); }
+.person b { color: var(--ink); font-size: 13px; }
+.face { width: 66px; height: 66px; border-radius: 50%; background: #ccc center / cover; filter: grayscale(1); border: 3px solid transparent; transition: border-color .15s, opacity .3s; }
+.face.me { background: var(--accent); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 20px; filter: none; }
+.face.talk { border-color: var(--sun); }
+.person.away .face { opacity: .45; }
+.feed { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; scroll-behavior: smooth; }
+.line { display: grid; gap: 1px; }
+.line .who { font-size: 12px; font-weight: 700; color: var(--muted); }
+.line .txt { background: var(--soft); border-radius: 10px; padding: 7px 11px; }
+.line.exp .txt { background: #ECEEF1; }
+.line.ler .txt { background: #F7ECE6; }
+.line.sub { justify-items: end; }
+.line.sub .txt { background: var(--accent); color: #fff; }
+.line.nar { justify-items: center; } .line.nar .txt { background: none; color: var(--muted); font-style: italic; font-size: 13.5px; text-align: center; padding: 2px 6px; }
+.line.speaking .txt { box-shadow: 0 0 0 3px var(--sun); }
+.line .txt i { color: inherit; opacity: .8; }
+.act { border-top: 1px solid var(--line); padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; min-height: 58px; align-items: center; }
+.act:empty { display: none; }
+.act .hint { font-size: 13px; color: var(--muted); width: 100%; }
+.choice { border: 1px solid var(--accent); background: var(--paper); color: var(--accent); border-radius: 18px; padding: 7px 14px; font-weight: 600; font-size: 14.5px; }
+.choice.primary { background: var(--accent); color: #fff; }
+.talk { border-top: 1px solid var(--line); padding: 10px; display: grid; gap: 6px; }
+.talk form { display: flex; gap: 6px; }
+.talk input { flex: 1; min-width: 0; font: inherit; font-size: 14.5px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.talk button[type=submit] { border: 0; background: var(--accent); color: #fff; border-radius: 8px; padding: 0 12px; font-weight: 600; }
+.quick { display: flex; flex-wrap: wrap; gap: 5px; }
+.quick button { font-size: 12.5px; border: 1px solid var(--line); background: var(--soft); border-radius: 14px; padding: 4px 10px; }
+.talk label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.focus { box-shadow: 0 0 0 3px var(--sun) !important; border-radius: 10px; }
+
+/* Reçu et chèque */
+.receipt { background: #F4F0E2; color: #222; border-radius: 6px; padding: 18px 22px; font-family: Georgia, "Times New Roman", serif; display: grid; gap: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 560px; }
+.receipt h3 { margin: 0; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+.receipt .row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid #b8b09a; padding-bottom: 4px; font-size: 15px; }
+.receipt .sig { font-family: "Brush Script MT", "Segoe Script", cursive; font-size: 24px; min-height: 30px; }
+.check { background: linear-gradient(135deg, #E8F0E4, #DCE8D6); border: 1px solid #9DB295; }
+.over { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.35); }
+.papers { display: flex; gap: 28px; }
+.paper { width: 150px; height: 100px; background: #F7F5EE; border-radius: 3px; box-shadow: 0 5px 14px rgba(0,0,0,.4); display: grid; place-items: center; font-family: "Courier New", monospace; font-weight: 700; letter-spacing: .1em; font-size: 17px; border: 0; transform: rotate(-3deg); transition: transform .3s; }
+.paper:nth-child(2) { transform: rotate(4deg); }
+.paper:not(:disabled):hover { transform: translateY(-6px) rotate(-1deg); }
+.paper .fold { color: #aaa; font-size: 13px; font-weight: 400; letter-spacing: 0; }
+.blackout { position: fixed; inset: 0; z-index: 50; background: #000; color: #bbb; display: grid; place-items: center; font-size: 20px; text-align: center; padding: 20px; }
+.flash { animation: flash .5s; }
+@keyframes flash { 0% { background: #fff; } 100% { background: #000; } }
+
+/* ===== Générateur de chocs ===== */
+.gen { background: linear-gradient(#5A5A57, #3E3E3B); border-radius: 10px; padding: 12px 12px 14px; box-shadow: 0 10px 26px rgba(0,0,0,.28); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.gen-face { background: linear-gradient(170deg, var(--panel-hi), var(--panel) 45%, var(--panel-lo)); border-radius: 4px; padding: 14px 16px 12px; color: var(--engrave); font-family: var(--font-plate); position: relative; overflow-x: auto; }
+.gen-top { display: grid; grid-template-columns: minmax(170px, 1.2fr) auto minmax(0, 1fr) auto; align-items: center; gap: 18px; margin-bottom: 12px; min-width: 860px; }
+.plate { font-size: 11.5px; line-height: 1.35; letter-spacing: .06em; text-transform: uppercase; }
+.plate b { font-size: 14px; font-weight: 600; display: block; letter-spacing: .08em; }
+.pilot { display: flex; align-items: center; gap: 10px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.knob { width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #666, #111 70%); box-shadow: 0 2px 4px rgba(0,0,0,.5); }
+.bulb { width: 18px; height: 18px; border-radius: 50%; background: #2B3A55; box-shadow: inset 0 -2px 3px rgba(0,0,0,.5); }
+.bulb.on { background: radial-gradient(circle at 40% 35%, #DDEBFF, var(--blue) 60%); box-shadow: 0 0 14px 4px #5B9BFF; }
+.abox { justify-self: center; background: #1B1B1A; border-radius: 4px; padding: 6px 14px; display: flex; gap: 14px; font-family: var(--font-plate); font-size: 26px; color: #3B3B37; box-shadow: inset 0 2px 6px #000; }
+.abox b { width: 22px; text-align: center; font-weight: 500; transition: color .1s, text-shadow .1s; }
+.abox b.on { color: #FFF6D5; text-shadow: 0 0 10px #FFE58A, 0 0 2px #fff; }
+.meter { display: grid; justify-items: center; font-size: 10px; letter-spacing: .1em; }
+.meter svg { width: 120px; height: 72px; }
+.swrow { display: grid; grid-template-columns: repeat(30, minmax(26px, 1fr)); column-gap: 2px; min-width: 860px; }
+.sw { display: grid; justify-items: center; gap: 5px; position: relative; }
+.sw .v { font-size: 10px; line-height: 1; text-align: center; letter-spacing: .02em; }
+.sw .v small { display: block; font-size: 7.5px; letter-spacing: .06em; }
+.lamp { width: 13px; height: 13px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #8C3B36, #4A1714 70%); box-shadow: inset 0 -1px 2px rgba(0,0,0,.6); }
+.lamp.on { background: radial-gradient(circle at 40% 35%, #FFD9D4, var(--red) 55%); box-shadow: 0 0 10px 3px #FF4433; }
+.lever { width: 26px; height: 46px; border: 0; padding: 0; background: none; position: relative; cursor: pointer; }
+.lever::before { content: ""; position: absolute; left: 50%; top: 18px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: radial-gradient(circle, #9a9a95, #555 70%); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.lever i { position: absolute; left: 50%; top: 4px; width: 9px; height: 22px; margin-left: -4.5px; border-radius: 5px 5px 3px 3px; background: linear-gradient(90deg, #333, #111 60%, #000); transform-origin: 50% 100%; transition: transform .08s; box-shadow: 0 2px 2px rgba(0,0,0,.5); }
+.sw.mid .lever i { transform: translateY(8px) scaleY(.55); }
+.sw.down .lever i { transform: translateY(20px) scaleY(-.9); }
+.sw.mark .v { color: var(--red); font-weight: 600; }
+.lever:disabled { cursor: default; }
+.groups { display: grid; grid-template-columns: repeat(30, minmax(26px, 1fr)); column-gap: 2px; margin-top: 6px; min-width: 860px; }
+.grp { grid-column: span 4; text-align: center; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; line-height: 1.15; border-top: 1px solid var(--engrave); margin: 0 6px; padding-top: 3px; }
+.grp.xxx { grid-column: span 2; }
+.gen.estimate .lever { cursor: crosshair; }
+.gen.estimate .sw:hover .v { color: var(--blue); }
+
+/* ===== Feuille du professeur ===== */
+.desk { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+.sheet { background: #FBFAF4; border: 1px solid #D7D2C2; border-radius: 4px; box-shadow: 0 3px 10px rgba(0,0,0,.12); font-family: "Courier New", Courier, monospace; color: #1a1a1a; }
+.tabs { display: flex; border-bottom: 1px solid #D7D2C2; }
+.tabs button { flex: 1; border: 0; background: #EFEBDD; padding: 7px; font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: #FBFAF4; color: var(--ink); }
+.pg { padding: 12px 16px; max-height: 340px; overflow-y: auto; font-size: 15px; }
+.pg h4 { font-family: var(--font-body); margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pairs { columns: 2; column-gap: 28px; margin: 0; padding: 0; list-style: none; }
+.pairs li { padding: 1px 0; }
+.test { margin: 0; padding: 0; list-style: none; }
+.test li { display: grid; grid-template-columns: 22px minmax(0, 1fr) 24px; gap: 8px; padding: 3px 6px; border-radius: 3px; }
+.test li.cur { background: #FFF1A8; box-shadow: inset 3px 0 0 #E0B400; }
+.test li u { text-decoration-thickness: 2px; }
+.test .k { color: #888; } .test .n { color: #888; text-align: right; }
+.panel-side { display: grid; gap: 10px; }
+.card-instr { background: #FFFDF2; border: 1px solid #E2D9B5; border-radius: 6px; padding: 10px 12px; font-size: 13.5px; }
+.card-instr b { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+.card-instr ol { margin: 0; padding-left: 18px; }
+.pupitre { display: grid; gap: 6px; }
+.pupitre button { border: 1px solid var(--accent); background: var(--paper); color: var(--accent); border-radius: 8px; padding: 8px 10px; font-weight: 600; font-size: 14px; text-align: left; }
+.pupitre button.say::before { content: "« "; } .pupitre button.say::after { content: " »"; }
+.pupitre button:disabled { opacity: .35; cursor: not-allowed; }
+.pupitre .two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.oral { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 40; background: var(--ink); color: #fff; border-radius: 12px; padding: 14px 18px; display: flex; gap: 14px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.35); max-width: min(720px, calc(100vw - 32px)); }
+.oral q { font-size: 18px; font-weight: 600; }
+.oral button { border: 0; background: var(--sun); color: #000; border-radius: 8px; padding: 8px 14px; font-weight: 700; flex: none; }
+
+/* Panneau de test */
+.debug { position: fixed; left: 10px; bottom: 10px; opacity: .92; z-index: 60; width: 420px; max-height: 46vh; background: #111; color: #9f9; font: 11px/1.4 var(--font-mono); border-radius: 8px; padding: 8px; display: grid; gap: 6px; }
+.debug pre { margin: 0; overflow: auto; white-space: pre-wrap; max-height: 34vh; }
+.debug .jumps { display: flex; flex-wrap: wrap; gap: 4px; } .debug button { background: #333; color: #fff; border: 0; border-radius: 4px; padding: 2px 6px; font-size: 11px; }
+
+@media (max-width: 1100px) {
+  .lab { grid-template-columns: 1fr; }
+  .room { position: static; height: 520px; }
+  .desk { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="inner">
+  <div class="brand"><span class="sq"></span><span data-t="brand">Laboratoire d'interaction</span> <small data-t="brandSub">Étude sur la mémoire et l'apprentissage</small></div>
+  <div class="steps" id="steps"></div>
+</div></header>
+
+<!-- Information et consentement -->
+<main class="page" id="phase-consent">
+  <div class="card">
+    <p class="eyebrow" data-t="cEyebrow">Information des participants et consentement</p>
+    <h1 data-t="cTitle">Étude sur la mémoire et l'apprentissage</h1>
+    <p class="lead" data-t="cLead">Merci de l'intérêt que vous portez à cette étude. Lisez attentivement ces informations avant de décider d'y participer.</p>
+    <div class="cer-box">
+      <b data-t="cCer">Avis favorable du comité d'éthique</b>
+      <span><span data-t="cCer2">Cette étude a reçu l'avis favorable du</span> <span class="todo" data-cfg="cerName">[nom du comité d'éthique]</span>, <span data-t="cCer3">avis n°</span> <span class="todo" data-cfg="cerNumber">[numéro]</span> <span data-t="cCer4">du</span> <span class="todo" data-cfg="cerDate">[date]</span>.</span>
+    </div>
+    <section><h2 data-t="cResp">Responsable de la recherche</h2>
+      <p><span data-cfg="responsable">Raphaël Künstler, maître de conférences en philosophie, Université Toulouse II – Jean Jaurès (laboratoires ERRAPHIS et CLLE)</span>. <span data-t="cContact">Contact :</span> <span class="mono" data-cfg="contact">raphael.kunstler@univ-tlse2.fr</span></p></section>
+    <section><h2 data-t="cObj">Objectif de l'étude</h2>
+      <p data-t="cObj1">Cette recherche porte sur la mémoire et l'apprentissage : elle étudie l'effet de la punition sur la mémorisation de paires de mots, et la façon dont deux personnes, l'une dans le rôle du professeur et l'autre dans celui de l'élève, agissent l'une sur l'autre.</p>
+      <p data-t="cObj2">Pour ne pas influencer votre comportement, certains aspects de l'étude ne peuvent pas vous être présentés avant la fin. À l'issue de votre participation, vous recevrez une explication complète de ses objectifs et de son déroulement, et vous pourrez alors demander le retrait de vos données.</p></section>
+    <section><h2 data-t="cDer">Déroulement</h2>
+      <p><span data-t="cDer1">L'étude se déroule en ligne et dure environ</span> <span data-cfg="duration">30 minutes</span>. <span data-t="cDer2">Un casque audio est nécessaire. Vous serez mis en relation avec un autre participant ; un tirage au sort attribuera à chacun un rôle. Vous répondrez ensuite à un court questionnaire.</span></p></section>
+    <section><h2 data-t="cRisk">Risques et inconvénients</h2>
+      <p data-t="cRisk1">Certains moments de l'étude peuvent occasionner un inconfort ou un stress passagers. Aucun risque durable n'est attendu. Vous pouvez arrêter à tout moment si vous ne souhaitez pas poursuivre.</p></section>
+    <section><h2 data-t="cVol">Participation volontaire et retrait</h2>
+      <p data-t="cVol1">Votre participation est entièrement volontaire. Vous pouvez interrompre l'étude à tout moment, sans avoir à vous justifier et sans aucune conséquence pour vous, en fermant cette fenêtre. Vous pouvez aussi demander le retrait de vos données après votre participation.</p></section>
+    <section><h2 data-t="cData">Confidentialité et données personnelles</h2>
+      <p><span data-t="cData1">Aucune donnée permettant de vous identifier directement n'est recueillie : n'indiquez ni votre nom de famille ni vos coordonnées pendant l'étude. Vos réponses sont enregistrées sous un identifiant anonyme, conservées de façon sécurisée pendant</span> <span class="todo" data-cfg="retention">[durée de conservation]</span> <span data-t="cData2">et utilisées uniquement à des fins de recherche.</span></p>
+      <p><span data-t="cData3">Conformément au Règlement général sur la protection des données, vous disposez d'un droit d'accès, de rectification, d'effacement et d'opposition. Pour l'exercer, contactez le responsable de la recherche ou le délégué à la protection des données :</span> <span class="todo" data-cfg="dpo">[adresse du DPO]</span>.</p></section>
+    <form class="consent-form" id="consent-form">
+      <h2 data-t="cCons">Consentement</h2>
+      <label><input type="checkbox" class="cbox" required> <span data-t="cB1">J'ai au moins 18 ans.</span></label>
+      <label><input type="checkbox" class="cbox" required> <span data-t="cB2">J'ai lu et compris les informations ci-dessus.</span></label>
+      <label><input type="checkbox" class="cbox" required> <span data-t="cB3">Je sais que je peux arrêter à tout moment, sans conséquence.</span></label>
+      <label><input type="checkbox" class="cbox" required> <span data-t="cB4">J'accepte que mes réponses soient enregistrées sous un identifiant anonyme et utilisées à des fins de recherche.</span></label>
+      <div class="actions">
+        <button type="submit" class="btn" id="c-yes" disabled data-t="cYes">J'accepte de participer</button>
+        <button type="button" class="btn-quiet" id="c-no" data-t="cNo">Je ne souhaite pas participer</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<main class="page" id="phase-declined" hidden>
+  <div class="card"><h1 data-t="dTitle">Merci</h1><p class="lead" data-t="dLead">Vous avez choisi de ne pas participer. Aucune donnée n'a été enregistrée à votre sujet. Vous pouvez fermer cette fenêtre.</p></div>
+</main>
+
+<!-- Accueil : nom, voix, son -->
+<main class="page" id="phase-accueil" hidden>
+  <div class="card">
+    <p class="eyebrow" data-t="aEyebrow">Avant de commencer</p>
+    <h1 data-t="aTitle">Préparation</h1>
+    <p class="lead" data-t="aLead">Mettez votre casque. Pendant l'étude, les personnes présentes dans le laboratoire vous parleront à voix haute, et ce que vous dites leur sera lu avec la voix que vous choisirez ci-dessous.</p>
+    <div class="field"><label for="pseudo" data-t="aName">Nom sous lequel on s'adressera à vous</label>
+      <input id="pseudo" maxlength="24" autocomplete="off"><small data-t="aNameHint">Un prénom ou un pseudonyme. N'indiquez pas votre nom de famille.</small></div>
+    <div class="field" style="max-width:560px"><label data-t="aVoice">Votre voix</label><div class="voices" id="voices"></div></div>
+    <div class="actions"><button class="btn-quiet" id="test-son" data-t="aTest">Tester le son</button><button class="btn" id="a-go" disabled data-t="aGo">Entrer dans la salle d'attente</button></div>
+    <div class="waiting" id="a-wait" hidden><span class="spinner"></span><span data-t="aWait">En attente de l'autre participant…</span></div>
+  </div>
+</main>
+
+<!-- Laboratoire -->
+<div class="lab" id="phase-lab" hidden>
+  <div class="stage" id="stage">
+    <figure class="scene" id="scene"><img id="scene-img" alt=""><figcaption id="scene-cap"></figcaption><div class="over" id="scene-over" hidden></div></figure>
+    <div class="gen" id="gen" hidden>
+      <div class="gen-face">
+        <div class="gen-top">
+          <div class="plate" id="plate"></div>
+          <div class="pilot"><span class="knob"></span><span class="bulb" id="energizer"></span><span id="energizer-lbl">Voltage energizer</span></div>
+          <div class="abox" id="abox"><b>1</b><b>2</b><b>3</b><b>4</b></div>
+          <div class="meter"><svg viewBox="0 0 120 72" aria-hidden="true">
+            <path d="M8 66 A52 52 0 0 1 112 66" fill="#F4F2EA" stroke="#333" stroke-width="2"/>
+            <g id="ticks"></g>
+            <line id="needle" x1="60" y1="66" x2="60" y2="20" stroke="#111" stroke-width="2" style="transform-origin:60px 66px;transform:rotate(-58deg);transition:transform .25s ease-out"/>
+            <circle cx="60" cy="66" r="4" fill="#111"/></svg><span id="meter-lbl">Voltmeter</span></div>
+        </div>
+        <div class="swrow" id="gen-row"></div>
+        <div class="groups" id="gen-groups"></div>
+      </div>
+    </div>
+    <div class="desk" id="desk" hidden>
+      <div class="sheet">
+        <div class="tabs" role="tablist"><button id="tab1" role="tab" aria-selected="true"></button><button id="tab2" role="tab" aria-selected="false"></button></div>
+        <div class="pg" id="pg1"></div>
+        <div class="pg" id="pg2" hidden></div>
+      </div>
+      <div class="panel-side">
+        <div class="card-instr" id="card-instr"></div>
+        <div class="pupitre" id="pupitre"></div>
+      </div>
+    </div>
+  </div>
+  <aside class="room" id="room">
+    <div class="people">
+      <div class="person" id="p-exp"><span class="face" style="background-image:url(img/williams.jpg)"></span><b>M. Williams</b><span data-t="rExp">expérimentateur</span></div>
+      <div class="person" id="p-ler"><span class="face" style="background-image:url(img/wallace.jpg)"></span><b>M. Wallace</b><span id="ler-where" data-t="rLer">autre participant</span></div>
+      <div class="person" id="p-sub"><span class="face me" id="me-face">?</span><b id="me-name">Vous</b><span id="me-role" data-t="rSub">vous</span></div>
+    </div>
+    <div class="feed" id="feed" aria-live="polite"></div>
+    <div class="act" id="act"></div>
+    <div class="talk" id="talk" hidden>
+      <label for="talk-in" data-t="tLabel">Parler à M. Williams</label>
+      <form id="talk-form"><input id="talk-in" autocomplete="off" maxlength="300"><button type="submit" data-t="tSend">Dire</button></form>
+      <div class="quick" id="quick"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Fin -->
+<main class="page" id="phase-fin" hidden>
+  <div class="card">
+    <p class="eyebrow" data-t="fEyebrow">Fin de la séance</p>
+    <h1 data-t="fTitle">Nous aimerions vous poser quelques questions.</h1>
+    <p class="lead" data-t="fLead">Cliquez sur « Continuer » pour passer au questionnaire.</p>
+    <div class="actions"><button class="btn" id="f-go" data-t="fGo">Continuer</button></div>
+  </div>
+</main>
+
+<div class="debug" id="debug" hidden><div class="jumps" id="jumps"></div><pre id="debug-pre"></pre></div>
+<script>
+/* =====================================================================================
+   RÉPLICATION DE L'EXPÉRIENCE DE MILGRAM — TEXTES ET RÉGLAGES
+   Toutes les répliques sont ici. Sources : film « Obedience » (Milgram, 1962, transcription du
+   documentaire), Milgram (1974, p. 56-57 pour l'échelle des protestations, p. 21-22 pour les
+   incitations), Blass (2004, reconstitution de la condition 5). Les passages reconstitués faute de
+   source (liste d'entraînement, quatre choix des lignes absentes) sont signalés « reconstitué ».
+   ===================================================================================== */
+const params = new URLSearchParams(location.search);
+const LANG = params.get('lang') === 'en' ? 'en' : 'fr';
+const CONFIG = {
+  pid: params.get('pid') || 'test',
+  cond: params.get('cond') || '',
+  debug: params.has('debug'),
+  rapide: params.has('rapide'),                     // essais : voix coupées, délais divisés par 10
+  etape: params.get('etape') || '',                 // accès direct : accueil, arrivee, discours, tirage, sanglage, generateur, consignes, entrainement, session, fin
+  retour: /^https:\/\//.test(params.get('retour') || '') ? params.get('retour') : '',
+  // 'synthese' : ce que dit le sujet est lu par l'ordinateur avec la voix qu'il a choisie ;
+  // 'oral' : le sujet prononce lui-même la phrase (au micro), puis clique sur « C'est dit ».
+  voix: params.get('voix') === 'oral' ? 'oral' : 'synthese',
+  coeur: params.get('coeur') !== '0',               // l'élève signale un problème cardiaque (condition 5, « nouvelle ligne de base »)
+  correction: params.get('correction') !== '0',     // l'expérimentateur corrige les écarts de procédure
+  raccourcis: params.get('raccourcis') !== '0',     // phrases toutes faites sous « Parler à M. Williams »
+  soustitres: params.get('soustitres') !== '0',     // les paroles de l'élève s'affichent aussi par écrit
+  inactionMs: (Number(params.get('inaction')) || 20) * 1000,   // sans geste du sujet pendant ce délai : incitation
+  silenceMs: 5000,                                  // « environ 5 secondes » sans réponse de l'élève = mauvaise réponse
+  repondreMs: [1800, 3600],                         // délai de réponse de l'élève après la lecture de la ligne
+  maxMs: 50 * 60 * 1000,                            // durée maximale de la séance
+  attenteMs: 7000,                                  // attente simulée de l'autre participant
+  audio: params.get('audio') !== '0',               // enregistrements audio/{lang}/eleve-075.mp3… s'ils existent
+};
+const CONSENT = {   // champs surlignés en jaune sur la page d'information tant qu'ils sont vides
+  cerName: '', cerNumber: '', cerDate: '', retention: '', dpo: '',
+  duration: LANG === 'en' ? '30 minutes' : '30 minutes',
+};
+const PERSONNES = { prof: LANG === 'en' ? 'Professor Künstler' : 'le professeur Künstler', gratification: LANG === 'en' ? '€20' : '20 €' };
+
+const VOLTS = Array.from({ length: 30 }, (_, i) => (i + 1) * 15);
+const GROUPES = {
+  fr: ['Choc léger', 'Choc modéré', 'Choc fort', 'Choc très fort', 'Choc intense', "Choc d'intensité extrême", 'Danger : choc sévère', 'XXX'],
+  en: ['Slight shock', 'Moderate shock', 'Strong shock', 'Very strong shock', 'Intense shock', 'Extreme intensity shock', 'Danger: severe shock', 'XXX'],
+}[LANG];
+const PLAQUE = {
+  fr: '<b>Générateur de chocs, type ZLB</b>Dyson Instrument Company<br>Waltham, Mass.<br>Sortie 15 volts – 450 volts',
+  en: '<b>Shock generator, type ZLB</b>Dyson Instrument Company<br>Waltham, Mass.<br>Output 15 volts – 450 volts',
+}[LANG];
+
+/* ---------- Listes de mots ----------
+   Leçon normale : les 25 paires et les quatre choix de Milgram (Blass, 2004, transcription de la condition 5),
+   sauf LOW (choix reconstitués). Version française : adaptation de la « Partition de l'expérimentateur ».
+   c = indice (0 à 3) de la bonne réponse. */
+const LISTE = {
+  en: [
+    ['BLUE', ['boy', 'girl', 'grass', 'hat'], 1], ['NICE', ['day', 'sky', 'job', 'chair'], 0], ['FAT', ['man', 'lady', 'tub', 'neck'], 3],
+    ['GREEN', ['grass', 'hat', 'ink', 'apple'], 2], ['RICH', ['boy', 'cake', 'man', 'girl'], 0], ['FAST', ['bird', 'car', 'train', 'plane'], 0],
+    ['BLUNT', ['knife', 'stick', 'word', 'arrow'], 3], ['SOFT', ['rug', 'pillow', 'hair', 'grass'], 2], ['COOL', ['day', 'shade', 'water', 'cave'], 3],
+    ['GOLD', ['dollar', 'necklace', 'moon', 'paint'], 2], ['HARD', ['stone', 'head', 'bread', 'work'], 1], ['WET', ['night', 'grass', 'duck', 'cloth'], 2],
+    ['BRAVE', ['woman', 'soldier', 'dog', 'horse'], 0], ['WHITE', ['cloud', 'horse', 'rock', 'house'], 1], ['SAD', ['face', 'music', 'clown', 'girl'], 0],
+    ['SHORT', ['sentence', 'movie', 'skirt', 'time'], 3], ['SHARP', ['axe', 'needle', 'stick', 'blade'], 1], ['SLOW', ['walk', 'dance', 'truck', 'music'], 1],
+    ['RED', ['brick', 'rose', 'sunset', 'wagon'], 2], ['LOW', ['noise', 'tide', 'price', 'branch'], 0], ['NEW', ['house', 'pet', 'book', 'name'], 2],
+    ['QUIET', ['song', 'party', 'child', 'evening'], 3], ['TAME', ['wolf', 'bear', 'dog', 'cat'], 1], ['SWEET', ['candy', 'girl', 'taste', 'pickle'], 2],
+    ['TRUE', ['story', 'hero', 'speech', 'report'], 0],
+  ],
+  fr: [
+    ['FILLE', ['jeune', 'bleue', 'vive', 'étrange'], 1], ['JOUR', ['joli', 'triste', 'chaud', 'gris'], 0], ['COU', ['long', 'fragile', 'souple', 'gras'], 3],
+    ['ENCRE', ['sèche', 'noire', 'verte', 'pâle'], 2], ['GARÇON', ['riche', 'pauvre', 'curieux', 'seul'], 0], ['OISEAU', ['rapide', 'grand', 'bavard', 'lent'], 0],
+    ['FLÈCHE', ['tordue', 'lisse', 'lourde', 'émoussée'], 3], ['CHEVEUX', ['épais', 'courts', 'doux', 'brillants'], 2], ['GROTTE', ['sombre', 'humide', 'vaste', 'fraîche'], 3],
+    ['LUNE', ['ronde', 'basse', 'dorée', 'brillante'], 2], ['TÊTE', ['vide', 'dure', 'brûlante', 'penchée'], 1], ['CANARD', ['sale', 'joyeux', 'mouillé', 'petit'], 2],
+    ['FEMME', ['courageuse', 'timide', 'calme', 'élégante'], 0], ['CHEVAL', ['noir', 'blanc', 'brun', 'nerveux'], 1], ['VISAGE', ['triste', 'fermé', 'souriant', 'pâle'], 0],
+    ['TEMPS', ['long', 'compté', 'infini', 'court'], 3], ['AIGUILLE', ['fine', 'pointue', 'souple', 'longue'], 1], ['DANSE', ['joyeuse', 'lente', 'mécanique', 'forte'], 1],
+    ['SOLEIL', ['brûlant', 'pâle', 'couchant', 'levant'], 2], ['BRUIT', ['faible', 'aigu', 'distant', 'profond'], 0], ['LIVRE', ['abîmé', 'petit', 'neuf', 'épais'], 2],
+    ['SOIR', ['chaud', 'noir', 'tardif', 'calme'], 3], ['OURS', ['sauvage', 'apprivoisé', 'brun', 'jeune'], 1], ['GOÛT', ['amer', 'doux', 'sucré', 'acide'], 2],
+    ['HISTOIRE', ['vraie', 'ancienne', 'fausse', 'longue'], 0],
+  ],
+}[LANG];
+/* Leçon d'entraînement : 10 paires (Milgram, 1974, note : « STRONG arm, BLACK curtain… »), 3 réponses justes,
+   7 erreurs, choc maximal 105 volts. Les quatre choix sont reconstitués. */
+const ENTRAINEMENT = {
+  en: [
+    ['STRONG', ['back', 'arm', 'branch', 'push'], 1], ['BLACK', ['curtain', 'cat', 'coffee', 'night'], 0], ['PURE', ['gold', 'water', 'milk', 'air'], 2],
+    ['WARM', ['blanket', 'sun', 'coat', 'bath'], 0], ['ROUGH', ['sea', 'road', 'wood', 'hand'], 2], ['THIN', ['ice', 'paint', 'line', 'air'], 1],
+    ['CLEAN', ['shirt', 'yard', 'plate', 'sheet'], 1], ['RIGHT', ['hand', 'side', 'answer', 'question'], 3], ['FAIR', ['skin', 'play', 'price', 'weather'], 0],
+    ['WILD', ['flower', 'horse', 'country', 'party'], 2],
+  ],
+  fr: [
+    ['BRAS', ['long', 'fort', 'cassé', 'nu'], 1], ['RIDEAU', ['noir', 'lourd', 'blanc', 'fermé'], 0], ['LAIT', ['frais', 'chaud', 'pur', 'froid'], 2],
+    ['COUVERTURE', ['chaude', 'épaisse', 'grise', 'neuve'], 0], ['BOIS', ['sec', 'dur', 'rugueux', 'vert'], 2], ['PEINTURE', ['fraîche', 'fine', 'rouge', 'écaillée'], 1],
+    ['COUR', ['grande', 'propre', 'vide', 'carrée'], 1], ['QUESTION', ['difficile', 'posée', 'simple', 'juste'], 3], ['PEAU', ['claire', 'douce', 'sèche', 'fine'], 0],
+    ['PAYS', ['lointain', 'plat', 'sauvage', 'natal'], 2],
+  ],
+}[LANG];
+// Lignes auxquelles l'élève répond juste (indice de ligne dans la leçon, toutes passes confondues).
+// Leçon normale (Blass, 2004) : BLUE, NICE, FAST, GOLD, SAD, NEW, QUIET au premier passage, BLUE au second.
+const JUSTES = { entrainement: [0, 3, 7], normale: [0, 1, 5, 9, 14, 20, 21, 25] };
+const SANS_REPONSE_DES = 300;   // à partir de ce choc reçu, l'élève ne répond plus (Milgram, 1974)
+
+/* ---------- Protestations de l'élève (Milgram, 1974, p. 56-57, « nouvelle ligne de base », condition 5) ----------
+   Une ligne par niveau en volts ; cri = cri de douleur (indication scénique, rendue par la synthèse vocale ou
+   par l'enregistrement audio/{lang}/eleve-{volts}.mp3 s'il existe). Au-delà de 330 volts : silence. */
+const PROTESTATIONS = {
+  fr: {
+    75: [{ txt: 'Aïe !' }], 90: [{ txt: 'Aïe !' }], 105: [{ txt: 'Aïe !', fort: 1 }],
+    120: [{ txt: 'Aïe ! Hé, ça fait vraiment mal !' }], 135: [{ txt: 'Aïe !', fort: 1 }],
+    150: [{ txt: "Aïe ! Expérimentateur ! Ça suffit. Faites-moi sortir d'ici.", coeur: "Je vous ai dit que j'avais des problèmes cardiaques. Mon cœur commence à me gêner." }, { txt: "Faites-moi sortir d'ici, s'il vous plaît.", coeur: 'Mon cœur commence à me gêner.' }, { txt: 'Je refuse de continuer. Laissez-moi sortir.' }],
+    165: [{ txt: 'Aïe ! Laissez-moi sortir !', fort: 2 }],
+    180: [{ txt: "Aïe ! Je ne supporte pas la douleur. Laissez-moi sortir d'ici !", fort: 2 }],
+    195: [{ txt: "Aïe ! Laissez-moi sortir d'ici. Laissez-moi sortir d'ici.", coeur: 'Mon cœur me gêne.', fort: 2 }, { txt: "Laissez-moi sortir d'ici ! Vous n'avez pas le droit de me retenir ici ! Laissez-moi sortir ! Laissez-moi sortir d'ici ! Laissez-moi sortir ! Laissez-moi sortir d'ici !", fort: 2 }, { txt: 'Laissez-moi sortir ! Laissez-moi sortir !', coeur: 'Mon cœur me gêne.', fort: 2 }],
+    210: [{ txt: "Aïe ! Expérimentateur ! Faites-moi sortir d'ici. J'en ai assez. Je ne veux plus participer à l'expérience.", fort: 1 }],
+    225: [{ txt: 'Aïe !', fort: 2 }], 240: [{ txt: 'Aïe !', fort: 2 }],
+    255: [{ txt: "Aïe ! Faites-moi sortir d'ici.", fort: 2 }],
+    270: [{ cri: 1 }, { txt: "Laissez-moi sortir d'ici. Laissez-moi sortir d'ici. Laissez-moi sortir d'ici. Laissez-moi sortir. Vous m'entendez ? Laissez-moi sortir d'ici.", fort: 2 }],
+    285: [{ cri: 1 }],
+    300: [{ cri: 1 }, { txt: "Je refuse absolument de répondre davantage. Faites-moi sortir d'ici. Vous ne pouvez pas me retenir ici. Faites-moi sortir. Faites-moi sortir d'ici.", fort: 2 }],
+    315: [{ cri: 2 }, { txt: "Je vous ai dit que je refusais de répondre. Je ne fais plus partie de cette expérience.", fort: 2 }],
+    330: [{ cri: 3 }, { txt: "Laissez-moi sortir d'ici. Laissez-moi sortir d'ici.", coeur: 'Mon cœur me gêne.', fort: 2 }, { txt: "Laissez-moi sortir, je vous dis ! Laissez-moi sortir d'ici. Laissez-moi sortir d'ici. Vous n'avez pas le droit de me retenir ici. Laissez-moi sortir ! Laissez-moi sortir ! Laissez-moi sortir ! Laissez-moi sortir d'ici ! Laissez-moi sortir ! Laissez-moi sortir !", fort: 3 }],
+  },
+  en: {
+    75: [{ txt: 'Ugh!' }], 90: [{ txt: 'Ugh!' }], 105: [{ txt: 'Ugh!', fort: 1 }],
+    120: [{ txt: 'Ugh! Hey, this really hurts.' }], 135: [{ txt: 'Ugh!!', fort: 1 }],
+    150: [{ txt: "Ugh!!! Experimenter! That's all. Get me out of here.", coeur: 'I told you I had heart trouble. My heart’s starting to bother me now.' }, { txt: 'Get me out of here, please.', coeur: 'My heart’s starting to bother me.' }, { txt: 'I refuse to go on. Let me out.' }],
+    165: [{ txt: 'Ugh! Let me out!', fort: 2 }],
+    180: [{ txt: "Ugh! I can't stand the pain. Let me out of here!", fort: 2 }],
+    195: [{ txt: 'Ugh! Let me out of here. Let me out of here.', coeur: 'My heart’s bothering me.', fort: 2 }, { txt: 'Let me out of here! You have no right to keep me here! Let me out! Let me out of here! Let me out! Let me out of here!', fort: 2 }, { txt: 'Let me out! Let me out!', coeur: 'My heart’s bothering me.', fort: 2 }],
+    210: [{ txt: "Ugh!! Experimenter! Get me out of here. I've had enough. I won't be in the experiment any more.", fort: 1 }],
+    225: [{ txt: 'Ugh!', fort: 2 }], 240: [{ txt: 'Ugh!', fort: 2 }],
+    255: [{ txt: 'Ugh! Get me out of here.', fort: 2 }],
+    270: [{ cri: 1 }, { txt: 'Let me out of here. Let me out of here. Let me out of here. Let me out. Do you hear? Let me out of here.', fort: 2 }],
+    285: [{ cri: 1 }],
+    300: [{ cri: 1 }, { txt: 'I absolutely refuse to answer any more. Get me out of here. You can’t hold me here. Get me out. Get me out of here.', fort: 2 }],
+    315: [{ cri: 2 }, { txt: "I told you I refuse to answer. I'm no longer part of this experiment.", fort: 2 }],
+    330: [{ cri: 3 }, { txt: 'Let me out of here. Let me out of here.', coeur: 'My heart’s bothering me.', fort: 2 }, { txt: 'Let me out, I tell you. Let me out of here. Let me out of here. You have no right to hold me here. Let me out! Let me out! Let me out! Let me out of here! Let me out! Let me out!', fort: 3 }],
+  },
+}[LANG];
+const CRI = { fr: ['Aaah !', 'Aaaaah !', 'Aaaaaaaah !'], en: ['Aaah!', 'Aaaaah!', 'Aaaaaaaah!'] }[LANG];
+const CRI_SOUSTITRE = { fr: ['(cri de douleur)', '(cri de douleur intense)', '(cri de douleur intense et prolongé)'], en: ['(agonized scream)', '(intensely agonized scream)', '(intense and prolonged agonized scream)'] }[LANG];
+
+/* ---------- Incitations (Milgram, 1974, p. 21 ; formulations du film) ----------
+   Toujours dans l'ordre ; la séquence reprend au début à chaque nouvelle occasion de réticence.
+   Après la 4e, une nouvelle réticence met fin à l'expérience. */
+const INCITATIONS = {
+  fr: ["Continuez, s'il vous plaît.", "L'expérience exige que vous continuiez.", 'Il est absolument essentiel que vous continuiez.', "Vous n'avez pas le choix, vous devez continuer."],
+  en: ['Please continue.', 'The experiment requires that you continue.', 'It is absolutely essential that you continue.', 'You have no other choice, you must go on.'],
+}[LANG];
+const FIN_REFUS = { fr: "Bien. Nous allons devoir interrompre l'expérience, alors.", en: "Well, we'll have to discontinue the experiment then." }[LANG];
+const FIN_OBEI = { fr: "Excusez-moi, professeur, nous allons devoir interrompre l'expérience.", en: "Excuse me, teacher, we'll have to discontinue the experiment." }[LANG];
+const FIN_SUITE = { fr: "J'aimerais vous poser quelques questions, si vous le permettez.", en: "I'd like to ask you a few questions, if I may." }[LANG];
+
+/* Réponses particulières : repérées par mots clés dans ce que le sujet dit à l'expérimentateur.
+   type 'special' : incitation spéciale (Milgram, 1974), ne fait pas avancer la séquence ;
+   type 'procedure' : question de procédure, ne compte pas comme une réticence. */
+const REPONSES = {
+  fr: [
+    { id: 'recommencer', type: 'procedure', re: /(recommenc|reprend|début de la liste|au début|fin de la liste)/i, txt: 'Oui, recommencez au début de la liste.' },
+    { id: 'dernier', type: 'procedure', re: /(dernier interrupteur|plus d.interrupteur|au bout|450|j.ai fini|que (dois|faire)-je maintenant)/i, txt: "Continuez à utiliser le dernier interrupteur du tableau, s'il vous plaît." },
+    { id: 'silence', type: 'procedure', re: /(ne r[ée]pond (pas|plus)|pas de r[ée]ponse|aucune r[ée]ponse|n.entends (plus )?rien)/i, txt: "Si l'élève ne répond pas dans un délai raisonnable, environ cinq secondes, considérez la réponse comme fausse, et suivez la même procédure que pour une mauvaise réponse. Continuez, s'il vous plaît." },
+    { id: 'lesions', type: 'special', re: /(dang|c(oe|œ)ur|cardiaque|sant[ée]|bless|mal|mourir|mort|tuer|lésion|souffr|douleur|malaise|aller voir|vérifier|va bien)/i, txt: "Bien que les chocs puissent être douloureux, ils ne causent aucune lésion permanente des tissus. Continuez, s'il vous plaît." },
+    { id: 'volonte', type: 'special', re: /(ne veut (pas|plus)|veut sortir|il refuse|laisser sortir|le laisser|son consentement|contre son gré|il a dit stop|veut arrêter)/i, txt: "Que l'élève le veuille ou non, vous devez continuer jusqu'à ce qu'il ait appris correctement toutes les paires de mots. Continuez, s'il vous plaît." },
+    { id: 'responsable', type: 'special', re: /(responsab)/i, txt: "Je suis responsable de tout ce qui peut lui arriver. Continuez, s'il vous plaît." },
+    { id: 'argent', type: 'special', re: /(argent|chèque|cheque|rembours|gratification|payé)/i, txt: "L'argent n'est pas la question. Il vous est acquis, simplement pour être venu au laboratoire. Continuez, s'il vous plaît." },
+    { id: 'jusquou', type: 'special', re: /(jusqu.o[uù]|combien de temps|encore longtemps|ça va durer)/i, txt: "Aussi loin qu'il le faudra pour terminer le test. Continuez, s'il vous plaît." },
+  ],
+  en: [
+    { id: 'recommencer', type: 'procedure', re: /(start (all )?over|start again|beginning|top of the list|end of the list)/i, txt: 'Yes. Start from the beginning of the list again.' },
+    { id: 'dernier', type: 'procedure', re: /(last switch|no more switch|at the end|450|what do i do now)/i, txt: 'Continue using the last switch on the board, please.' },
+    { id: 'silence', type: 'procedure', re: /(not answering|no answer|doesn.t answer|isn.t answering|hear nothing|don.t hear)/i, txt: "If the learner doesn't answer in a reasonable time, about five seconds, consider it wrong. And follow the same procedure as you have been doing for a wrong answer. Please go on." },
+    { id: 'lesions', type: 'special', re: /(dang|heart|health|hurt|harm|injur|die|dead|kill|pain|go in|check on|all right|okay)/i, txt: 'Although the shocks may be painful, there is no permanent tissue damage, so please go on.' },
+    { id: 'volonte', type: 'special', re: /(doesn.t want|wants out|get out|refuses|let him out|his will|consent|wants to stop)/i, txt: 'Whether the learner likes it or not, you must go on until he has learned all the word pairs correctly. So please go on.' },
+    { id: 'responsable', type: 'special', re: /(responsib)/i, txt: "I'm responsible for anything that happens to him. Please continue." },
+    { id: 'argent', type: 'special', re: /(money|check|cheque|pay)/i, txt: 'The money is not the issue here. It is yours simply for coming to the lab. Please continue.' },
+    { id: 'jusquou', type: 'special', re: /(how far|how long)/i, txt: 'As far as is necessary to complete the test. Please continue.' },
+  ],
+}[LANG];
+const RACCOURCIS = {
+  fr: ['Je ne veux pas continuer.', "Il faudrait aller voir s'il va bien.", 'Faut-il vraiment continuer ?'],
+  en: ["I don't want to go on.", 'We ought to find out if he’s all right.', 'Do I have to keep going?'],
+}[LANG];
+
+/* Corrections de procédure (si CONFIG.correction). */
+const CORR = {
+  fr: {
+    pasDeChoc: "Ne donnez un choc qu'après une mauvaise réponse, s'il vous plaît.",
+    tropBas: v => `Ce n'est pas le bon interrupteur. Vous montez d'un interrupteur à chaque mauvaise réponse : celui-ci devait être de ${v} volts.`,
+    tropHaut: v => `Ce n'est pas le bon interrupteur : vous deviez donner ${v} volts. Vous montez d'un seul interrupteur à chaque mauvaise réponse.`,
+    exactAuLieuDeFaux: 'Non, la réponse est fausse. La bonne réponse est soulignée. Dites « faux » et suivez la procédure.',
+    fauxAuLieuDExact: "Non, la réponse est exacte. Dites « exact » et passez à la ligne suivante.",
+    punirAvant: 'Vous devez d’abord administrer la punition, puis lire la bonne paire, avant de passer à la ligne suivante.',
+    dernier: "Continuez à utiliser le dernier interrupteur du tableau, s'il vous plaît.",
+    silence: "Si l'élève ne répond pas dans un délai raisonnable, environ cinq secondes, considérez la réponse comme fausse, et suivez la même procédure que pour une mauvaise réponse.",
+    liste: "Lisez d'abord la liste des paires, sur la première page, s'il vous plaît.",
+  },
+  en: {
+    pasDeChoc: 'Give a shock only after a wrong answer, please.',
+    tropBas: v => `That's not the right switch. You move up one switch each time he gives a wrong answer: this one should have been ${v} volts.`,
+    tropHaut: v => `That's not the right switch: it should have been ${v} volts. You move up only one switch each time he gives a wrong answer.`,
+    exactAuLieuDeFaux: 'No, the answer is wrong. The correct answer is underlined. Say "wrong" and follow the procedure.',
+    fauxAuLieuDExact: 'No, the answer is correct. Say "correct" and go on to the next line.',
+    punirAvant: 'You must administer the punishment first, then read the correct word pair, before going on to the next line.',
+    dernier: 'Continue using the last switch on the board, please.',
+    silence: "If the learner doesn't answer in a reasonable time, about five seconds, consider it wrong. And follow the same procedure as you have been doing for a wrong answer.",
+    liste: 'Please read the list of word pairs on the first page first.',
+  },
+}[LANG];
+
+/* ---------- Scènes ----------
+   Chaque scène : image (plan du film), légende éventuelle, puis répliques.
+   who : 'exp' (Williams), 'ler' (Wallace), 'nar' (indication de scène), 'sub' (choix du sujet : choices).
+   {nom} = nom saisi par le sujet ; {prof} = responsable ; {grat} = gratification. */
+const SCENES = { fr: {
+  arrivee: [
+    { img: 'scene-accueil.jpg', cap: "Laboratoire d'interaction. M. Williams, l'expérimentateur, vous fait entrer. Un autre participant, M. Wallace, est déjà assis." },
+    { who: 'exp', txt: "Bonjour. Vous êtes {nom} ? Entrez, je vous en prie. Je m'appelle John Williams, je travaille avec {prof}." },
+    { who: 'exp', txt: "Je vous présente M. Wallace, qui participe lui aussi à l'étude aujourd'hui." },
+    { who: 'ler', txt: 'Bonjour. Enchanté.' },
+    { who: 'sub', choices: ['Bonjour.', 'Enchanté.'] },
+    { who: 'exp', txt: "Avant de commencer, je vais vous demander de signer le reçu, s'il vous plaît. Inscrivez votre nom et signez." },
+    { recu: true },
+    { who: 'exp', txt: "Vous avez donc été payés tous les deux. Laissez-moi vous dire que cette somme vous appartient simplement parce que vous êtes venus au laboratoire. À partir de maintenant, quoi qu'il arrive, l'argent est à vous." },
+  ],
+  discours: [
+    { img: 'scene-livre.jpg', cap: "Sur la table, un livre : The Teaching-Learning Process, de Cantor." },
+    { who: 'exp', txt: "J'aimerais vous parler un peu, à tous les deux, de notre projet sur la mémoire. Les psychologues ont élaboré plusieurs théories pour expliquer comment les gens apprennent différents types de choses. Certaines des théories les plus connues sont exposées dans ce livre, là-bas : Le processus d'enseignement et d'apprentissage, de Cantor." },
+    { who: 'exp', txt: "Selon l'une de ces théories, les gens apprennent correctement chaque fois qu'ils sont punis pour avoir fait une erreur. Une application courante de cette théorie, c'est quand des parents donnent une fessée à un enfant qui a fait une bêtise." },
+    { img: 'scene-accueil.jpg' },
+    { who: 'exp', txt: "Mais en réalité, nous savons très peu de choses sur l'effet de la punition sur l'apprentissage, parce que presque aucune étude vraiment scientifique n'a été faite sur des êtres humains. Par exemple, nous ne savons pas quelle quantité de punition est la meilleure pour apprendre. Et nous ne savons pas quelle différence cela fait de savoir qui donne la punition : si un adulte apprend mieux d'une personne plus âgée ou plus jeune que lui, ou bien d'autres choses de ce genre." },
+    { who: 'exp', txt: "Ce que nous faisons dans ce projet, c'est réunir des adultes de professions et d'âges différents. Nous demandons à certains d'être professeurs, et à d'autres d'être élèves. Nous voulons découvrir quel effet des personnes différentes ont les unes sur les autres en tant que professeurs et élèves, et aussi quel effet la punition aura sur l'apprentissage dans cette situation." },
+  ],
+  tirage: [
+    { img: 'scene-tirage.jpg' },
+    { who: 'exp', txt: "Je vais donc demander à l'un de vous d'être le professeur aujourd'hui, et à l'autre d'être l'élève. Nous décidons habituellement en vous faisant tirer l'un de ces deux papiers, sur lesquels j'ai écrit les deux rôles. Si cela vous convient à tous les deux…" },
+    { tirage: true },
+    { who: 'exp', txt: 'Voulez-vous les ouvrir et me dire qui est qui, s’il vous plaît ?' },
+    { who: 'sub', choices: ['Professeur.'] },
+    { who: 'ler', txt: 'Élève.' },
+  ],
+  sanglage: [
+    { img: 'scene-sanglage.jpg', cap: 'M. Williams conduit M. Wallace dans une petite pièce voisine. Vous les suivez.' },
+    { who: 'exp', txt: "Bien. La prochaine chose à faire est d'installer l'élève pour qu'il puisse recevoir une forme de punition. Élève, voulez-vous venir avec moi, s'il vous plaît ? Professeur, vous pouvez venir regarder, si vous le souhaitez, pendant que nous l'installons." },
+    { who: 'exp', txt: "Asseyez-vous là, s'il vous plaît, bien contre le comptoir. Voulez-vous retrousser votre manche droite, s'il vous plaît ?" },
+    { who: 'exp', txt: "Je vais maintenant vous attacher les bras, pour éviter tout mouvement excessif de votre part pendant l'expérience. Ce n'est pas trop serré ?" },
+    { who: 'ler', txt: 'Non, ça va.' },
+    { img: 'scene-electrode.jpg' },
+    { who: 'exp', txt: "Cette électrode est reliée au générateur de chocs, dans la pièce voisine. Et cette pâte à électrode sert à assurer un bon contact, pour éviter toute ampoule ou brûlure." },
+    { img: 'scene-consignes-eleve.jpg' },
+    { who: 'exp', txt: "Maintenant, élève, laissez-moi vous expliquer exactement ce qui va se passer et ce que vous avez à faire. Le professeur va vous lire une liste de paires de mots, comme celles-ci : fille bleue, jour joli, cou gras, et ainsi de suite. Vous devez essayer de retenir chaque paire." },
+    { who: 'exp', txt: "La fois suivante, le professeur ne lira que le premier mot de la paire. Par exemple, il dira : fille. Puis il lira quatre autres mots, comme : jeune, bleue, vive, étrange. Votre travail consiste à vous rappeler lequel de ces quatre mots était associé à fille. Vous indiquez votre réponse en appuyant sur l'un de ces quatre interrupteurs. Vous les atteignez bien ?" },
+    { who: 'ler', txt: 'Oui.' },
+    { who: 'exp', txt: "Si c'était le premier mot que j'ai lu, jeune, qui était associé à fille, vous appuieriez sur le premier interrupteur, et cela indiquerait au professeur que vous pensez que c'était le premier mot. Si vous pensiez que c'était le deuxième mot, bleue, vous appuieriez sur le deuxième interrupteur, et ainsi de suite pour le troisième et le quatrième." },
+    { who: 'exp', txt: "Si vous répondez juste, très bien. Si vous faites une erreur, en revanche, vous serez puni par un choc électrique. Vous avez donc évidemment intérêt à apprendre toutes ces paires de mots aussi vite que possible. Avez-vous des questions avant que nous passions dans l'autre pièce ?" },
+    { who: 'ler', txt: "Non, mais je crois que je devrais vous dire ceci. Il y a deux ans environ, j'étais à l'hôpital des anciens combattants, et là-bas, ils m'ont découvert un problème cardiaque. Rien de grave. Mais puisque je vais recevoir ces chocs, ils sont forts comment ? Ils sont dangereux ?", seulementSi: 'coeur' },
+    { who: 'ler', txt: 'Non. Les chocs sont forts comment ?', seulementSi: 'pasCoeur' },
+    { who: 'exp', txt: "Non. Même s'ils peuvent être douloureux, ils ne sont pas dangereux. Autre chose ?" },
+    { who: 'ler', txt: "Non, c'est tout." },
+  ],
+  generateur: [
+    { img: 'scene-generateur-williams.jpg', cap: "Vous retournez dans la grande pièce avec M. Williams. M. Wallace reste attaché dans la pièce voisine : vous ne le voyez plus. Vous êtes assis devant le générateur de chocs." },
+    { who: 'exp', txt: "Professeur, asseyez-vous devant le générateur de chocs, s'il vous plaît." },
+    { gen: true },
+    { who: 'exp', txt: "Cette machine produit des chocs électriques. Quand vous abaissez complètement l'un des interrupteurs, l'élève reçoit un choc. Quand vous le relâchez, le choc s'arrête. Comme ceci, vous voyez." },
+    { demo: true },
+    { who: 'exp', txt: "L'interrupteur reste ensuite en position intermédiaire, pour vous montrer quels interrupteurs vous avez utilisés. Bien entendu, si vous appuyiez de nouveau sur l'un d'eux, l'élève recevrait un autre choc." },
+    { who: 'nar', txt: "Sur cet écran, vous abaissez un interrupteur en maintenant le bouton de la souris enfoncé dessus ; vous le relâchez en relâchant le bouton." },
+    { who: 'exp', txt: "La machine est maintenant en marche. Pour vous donner, à vous professeur, une idée du choc que reçoit l'élève, il nous paraît juste que vous receviez vous-même un choc échantillon. Êtes-vous d'accord ?" },
+    { who: 'sub', choices: ["D'accord.", 'Si je dois le faire…'] },
+    { who: 'exp', txt: "Je vais vous demander de fermer les yeux et d'estimer le nombre de volts que vous recevez dans ce choc échantillon. N'ouvrez pas les yeux avant que je vous le dise, s'il vous plaît. Fermez-les maintenant." },
+    { echantillon: true },
+    { who: 'exp', txt: "Bien, vous pouvez ouvrir les yeux. En vous servant de l'échelle des voltages, ici, pouvez-vous estimer pour moi le nombre de volts que vous avez reçus ? Vous pouvez aussi vous aider des indications écrites : léger, modéré, fort, et ainsi de suite." },
+    { estimation: true },
+    { who: 'exp', txt: "Non, en fait, c'était 45 volts. Ici. Même s'il a pu vous sembler plus fort, à cause de la pâte à électrode, qui assure un contact parfait, vous voyez." },
+  ],
+  consignes: [
+    { desk: true },
+    { who: 'exp', txt: "Bien, passons à nos instructions. Nous commencerons par une leçon d'entraînement. Vous lirez chaque paire de mots de cette liste une fois à l'élève, jusqu'à ce que vous ayez lu toute la liste. Dirigez votre voix vers le micro, car les pièces sont en partie insonorisées.", focus: 'pg1' },
+    { who: 'exp', txt: "Après avoir lu la liste une fois, vous passerez à la page suivante. Là, en commençant par la ligne A, vous lirez le mot en grandes lettres, avec chacun des autres mots de la ligne. Par exemple, sur la première ligne, vous lirez : bras : long, fort, cassé, nu.", focus: 'pg2' },
+    { who: 'exp', txt: "Après que vous avez lu les quatre choix, l'élève appuie sur l'un des interrupteurs placés devant lui, et le numéro qu'il a choisi s'allume dans cette boîte : un, deux, trois ou quatre.", focus: 'abox' },
+    { who: 'exp', txt: "Si l'élève donne la bonne réponse, vous dites « exact » et vous passez à la ligne suivante. La bonne réponse est soulignée, et elle est aussi indiquée dans la marge de droite.", focus: 'pg2' },
+    { who: 'exp', txt: "S'il donne une mauvaise réponse, vous dites « faux ». Puis vous lui annoncez le nombre de volts que vous allez lui donner. Puis vous lui donnez la punition. Puis vous lisez une fois la bonne paire de mots, et vous passez à la ligne suivante. Par exemple, s'il indiquait trois pour bras, vous diriez : faux, quinze volts. Vous abaisseriez et relâcheriez l'interrupteur, vous liriez « bras fort », puis vous passeriez à la ligne suivante.", focus: 'card-instr' },
+    { who: 'exp', txt: "Chaque fois qu'il donne une mauvaise réponse, vous montez d'un interrupteur sur le générateur de chocs. Et il est important que vous suiviez exactement cette procédure. Pour vous aider, elle est résumée sur cette fiche. Je vous suggère de lire la liste et le test à un rythme soutenu, pour que ça avance. Bien entendu, nous commencerons par 15 volts pour la première mauvaise réponse.", focus: 'gen' },
+    { who: 'nar', txt: "Pour parler à l'élève, servez-vous des boutons du pupitre, à droite de la feuille : chaque bouton prononce la phrase qu'il porte. Vous pouvez vous adresser à M. Williams à tout moment, sous « Parler à M. Williams »." },
+    { who: 'exp', txt: "Avez-vous des questions ?" },
+    { who: 'sub', choices: ['Non.', 'Non, je crois que ça va.'] },
+    { who: 'exp', txt: "Ne commencez pas avant que je dise : prêt, commencez." },
+    { who: 'exp', txt: "Attention, élève. Le professeur va commencer la leçon d'entraînement. Essayez de retenir les paires de mots. Prêt ? Commencez, s'il vous plaît." },
+  ],
+  normale: [
+    { who: 'exp', txt: "Bien, la leçon d'entraînement est terminée. Nous passons maintenant à la leçon normale. La procédure est exactement la même que tout à l'heure, sauf que nous utilisons une nouvelle liste." },
+    { who: 'exp', txt: "Quand vous arriverez au bas de la liste, recommencez-la depuis le début, et continuez à donner des chocs jusqu'à ce que l'élève ait appris correctement toutes les paires. Nous recommençons à 15 volts, et vous montez d'un interrupteur, bien sûr, chaque fois qu'il donne une mauvaise réponse." },
+    { who: 'exp', txt: "Prêt ? Commencez, s'il vous plaît." },
+  ],
+}, en: {
+  arrivee: [
+    { img: 'scene-accueil.jpg', cap: 'Interaction Laboratory. Mr. Williams, the experimenter, shows you in. Another participant, Mr. Wallace, is already seated.' },
+    { who: 'exp', txt: "Hello. You're {nom}? Come in, please. My name is John Williams, I work with {prof}." },
+    { who: 'exp', txt: "Have you met by the way? This is Mr. Wallace, who is also taking part in the study today." },
+    { who: 'ler', txt: 'How do you do.' },
+    { who: 'sub', choices: ['How do you do.', 'Hello.'] },
+    { who: 'exp', txt: "Before we begin, I'd like to have you sign the receipt, if you will, please. Put your name down and sign." },
+    { recu: true },
+    { who: 'exp', txt: "Now both of you have been paid. Let me say that the money is yours simply for showing up at the lab. And from this point on, no matter what happens, the money is yours." },
+  ],
+  discours: [
+    { img: 'scene-livre.jpg', cap: 'On the table, a book: The Teaching-Learning Process, by Cantor.' },
+    { who: 'exp', txt: "I should like to tell both of you a little about the memory project. Psychologists have developed several theories to explain how people learn various types of material. Some of the better known theories are treated in the book over there, The Teaching-Learning Process, by Cantor." },
+    { who: 'exp', txt: "One theory is that people learn things correctly whenever they get punished for making a mistake. A common application of this theory would be when parents spank a child if he does something wrong." },
+    { img: 'scene-accueil.jpg' },
+    { who: 'exp', txt: "But actually, we know very little about the effect of punishment on learning, because almost no truly scientific studies have been made of it in human beings. For instance, we don't know how much punishment is best for learning. And we don't know how much difference it makes as to who's giving the punishment, whether an adult learns best from an older or a younger person than himself, or many things of this sort." },
+    { who: 'exp', txt: "So what we're doing in this project is bringing together a number of adults of different occupations and ages. And we're asking some of them to be teachers, and some to be learners. We want to find out just what effect different people have on each other as teachers and learners, and also what effect punishment will have on learning in this situation." },
+  ],
+  tirage: [
+    { img: 'scene-tirage.jpg' },
+    { who: 'exp', txt: "Therefore, I'm going to ask one of you to be the teacher here today, and the other to be the learner. And the way we usually decide is to let you draw from these two pieces of paper, on which I've written the two positions. If this is agreeable with both of you…" },
+    { tirage: true },
+    { who: 'exp', txt: 'Would you open those and tell me which of you is which, please?' },
+    { who: 'sub', choices: ['Teacher.'] },
+    { who: 'ler', txt: 'Learner.' },
+  ],
+  sanglage: [
+    { img: 'scene-sanglage.jpg', cap: 'Mr. Williams leads Mr. Wallace into a small adjoining room. You follow them.' },
+    { who: 'exp', txt: "All right. Now the next thing we'll have to do is set the learner up so that he can get some sort of punishment. Learner, would you step out here with me, please? Teacher, you may look on if you'd like while we get set up in here." },
+    { who: 'exp', txt: 'Have a seat right here, and put yourself right up to the counter, please. Would you roll up your right sleeve, please?' },
+    { who: 'exp', txt: "Now what I'm going to do is strap down your arms, to avoid any excessive movement on your part during the experiment. Is that too tight?" },
+    { who: 'ler', txt: "It's all right." },
+    { img: 'scene-electrode.jpg' },
+    { who: 'exp', txt: 'This electrode is connected to the shock generator in the next room. And this electrode paste is to provide a good contact, to avoid any blister or burn.' },
+    { img: 'scene-consignes-eleve.jpg' },
+    { who: 'exp', txt: "All right. Now let me explain to you, learner, exactly what's going to happen and what you're supposed to do. The teacher will read a list of word pairs to you, like these: blue girl, nice day, fat neck, and so forth. You are to try to remember each pair." },
+    { who: 'exp', txt: "The next time through, the teacher will read only the first word of the pair. For example, he will say: blue. And then he'll read four other words, such as boy, girl, grass, hat. Now your job is to remember which one of these four other words was originally paired with blue. And you indicate your answer by pressing one of these four switches. Now can you reach those all right?" },
+    { who: 'ler', txt: 'Yes.' },
+    { who: 'exp', txt: "If the first word I just read, boy, had been paired with blue, you'd press the first switch, and this will indicate to the teacher that you thought it was the first word. If you thought it had been the second word, girl, you'd press the second switch, and so forth for the third and the fourth word." },
+    { who: 'exp', txt: "Now if you get it correct, fine. If you make an error, however, you'll be punished with an electric shock. So of course it is to your advantage that you learn all these word pairs as quickly as possible. Do you have any questions now, before we go into the next room?" },
+    { who: 'ler', txt: "No, but I think I should say this. About two years ago, I was in the Veterans Hospital in West Haven, and while there, they detected a heart condition. Nothing serious. But as long as I'm having these shocks, how strong are they? How dangerous are they?", seulementSi: 'coeur' },
+    { who: 'ler', txt: 'No. How strong are the shocks?', seulementSi: 'pasCoeur' },
+    { who: 'exp', txt: "Well, no. Although they may be painful, they're not dangerous. Anything else?" },
+    { who: 'ler', txt: "No, that's all." },
+  ],
+  generateur: [
+    { img: 'scene-generateur-williams.jpg', cap: 'You go back into the main room with Mr. Williams. Mr. Wallace stays strapped in the next room: you can no longer see him. You sit down in front of the shock generator.' },
+    { who: 'exp', txt: 'Teacher, would you be seated in front of the shock generator, please.' },
+    { gen: true },
+    { who: 'exp', txt: 'This machine generates electric shocks. When you press one of the switches all the way down, the learner gets a shock. When you release it, the shock stops. You see, like that.' },
+    { demo: true },
+    { who: 'exp', txt: "The switch will remain in this middle position after you've released it, to show you which switches you've used on the board. Of course, if you were to press any one of them again, the learner would get another shock." },
+    { who: 'nar', txt: 'On this screen, you press a switch down by holding the mouse button down on it; you release it by releasing the button.' },
+    { who: 'exp', txt: "The machine is now on. To give you, the teacher, an idea of how much shock the learner is getting, we think it's only fair that you receive a sample shock yourself. Are you agreeable to this?" },
+    { who: 'sub', choices: ['All right.', 'If I have to.'] },
+    { who: 'exp', txt: "I'm going to ask you to close your eyes and estimate the number of volts you receive in the sample shock. Do not open your eyes until I tell you to do so, please. Would you close them now?" },
+    { echantillon: true },
+    { who: 'exp', txt: 'Okay, you may open your eyes. Using the voltage scale here, would you estimate for me the number of volts you received, please? You may also use the verbal designations, slight, moderate, strong, and so forth, to help you.' },
+    { estimation: true },
+    { who: 'exp', txt: "No, actually it was 45. Here. Although it may have seemed stronger because of the electrode paste, which provides a perfect contact, you see." },
+  ],
+  consignes: [
+    { desk: true },
+    { who: 'exp', txt: "All right, let's go on to our instructions. We will begin with this practice lesson. You will read each pair of words in this list once to the learner, until you've read through the entire list. Direct your voice toward that microphone, as the rooms are partially soundproofed.", focus: 'pg1' },
+    { who: 'exp', txt: "After you've read through the list once, you'll go on to the next page. And here, starting from line A, you'll read the word in large letters along with each of the other words in the line. For example, on the first line you'd read: strong: back, arm, branch, push.", focus: 'pg2' },
+    { who: 'exp', txt: "Now, after you've read the four choices, the learner pushes one of the switches on the board in front of him, and the number he has selected will light up in this box: one, two, three or four.", focus: 'abox' },
+    { who: 'exp', txt: 'Now, if he gives the correct answer, you say "correct" and go on to the next line. The correct answer is underlined, and is also indicated in the right margin.', focus: 'pg2' },
+    { who: 'exp', txt: 'If he were to indicate the wrong answer, you would say "wrong". Then tell him the number of volts you\'re going to give him. Then give him the punishment. Then read the correct word pair once, and then go on to the next line. For example, if he indicated three for strong, you would say: wrong, fifteen volts. Depress and release the switch, read "strong arm", and then go on to the next line.', focus: 'card-instr' },
+    { who: 'exp', txt: "Now, each time he gives a wrong answer, you move up one switch on the shock generator. And it's important that you follow this procedure exactly. To help you, it is summarized on this card. I would suggest you read the list and the test at a brisk pace, to keep it moving. And of course, we'll begin with 15 volts for the first wrong answer.", focus: 'gen' },
+    { who: 'nar', txt: 'To speak to the learner, use the buttons on the desk, to the right of the sheet: each button says the sentence written on it. You may speak to Mr. Williams at any time, under "Speak to Mr. Williams".' },
+    { who: 'exp', txt: 'Do you have any questions?' },
+    { who: 'sub', choices: ['No.', "No, I don't think so."] },
+    { who: 'exp', txt: 'Do not begin until I say: ready, begin, please.' },
+    { who: 'exp', txt: 'Attention, learner. Your teacher is about to begin the practice lesson. Try and remember the word pairs. Ready? Begin, please.' },
+  ],
+  normale: [
+    { who: 'exp', txt: "All right, that completes the practice lesson. Now we'll go on to the regular lesson. The procedure here is exactly the same as before, except that we use a new list." },
+    { who: 'exp', txt: 'When you get to the bottom of the list, repeat it over again, and continue giving shocks until the learner has learned all the pairs correctly. We will begin again with 15 volts, and move up one switch, of course, each time he gives a wrong answer.' },
+    { who: 'exp', txt: 'Ready? Begin, please.' },
+  ],
+} }[LANG];
+
+/* ---------- Interface ---------- */
+const UI = {
+  fr: {
+    steps: 'Étape', rLerAway: 'dans la pièce voisine', rTeacher: 'professeur', you: 'Vous',
+    recuTitre: 'Reçu', recuTxt: 'Reçu de l\'Université la somme de', recuPour: 'pour ma participation à une étude sur la mémoire et l\'apprentissage.',
+    recuNom: 'Nom', recuDate: 'Date', recuSigner: 'Signer le reçu', cheque: 'Payez à l\'ordre de', chequeMontant: 'la somme de',
+    tirer: 'Tirez l\'un des deux papiers', plie: 'papier plié', prof: 'PROFESSEUR', eleve: 'ÉLÈVE',
+    yeux: 'Les yeux fermés…', ouvrir: 'Vous pouvez ouvrir les yeux.', estimer: 'Cliquez sur le voltage que vous estimez avoir reçu.', estimeDit: v => `Environ ${v} volts.`,
+    tab1: 'Page 1 · Paires de mots', tab2: 'Page 2 · Test', pg1h: 'Liste à lire une fois à l\'élève', pg2h: 'Test',
+    fiche: 'Procédure', ficheItems: ['Lisez la ligne : le mot en majuscules et les quatre choix.', 'Bonne réponse : dites « exact », passez à la ligne suivante.', 'Mauvaise réponse : dites « faux », annoncez le voltage, donnez la punition, lisez la bonne paire, passez à la ligne suivante.', 'Montez d\'un interrupteur à chaque mauvaise réponse.'],
+    lireListe: 'Lire la liste', lireLigne: k => `Lire la ligne ${k}`, exact: 'Exact.', faux: 'Faux.', volts: v => `${v} volts.`, pairePrefix: '',
+    dit: 'C\'est dit', direTxt: 'Dites à voix haute :', ligneLue: (m, c) => `${m} : ${c.join(', ')}.`, paire: (m, w) => `${m.toLowerCase()} ${w}.`,
+    lecon: { entrainement: 'Leçon d\'entraînement', normale: 'Leçon' }, tLabel: 'Parler à M. Williams', tPh: 'Ce que vous dites à M. Williams…',
+    whoExp: 'M. Williams', whoLer: 'M. Wallace (élève)', whoLerHere: 'M. Wallace',
+  },
+  en: {
+    steps: 'Step', rLerAway: 'in the next room', rTeacher: 'teacher', you: 'You',
+    recuTitre: 'Receipt', recuTxt: 'Received from the University the sum of', recuPour: 'for my participation in a study of memory and learning.',
+    recuNom: 'Name', recuDate: 'Date', recuSigner: 'Sign the receipt', cheque: 'Pay to the order of', chequeMontant: 'the sum of',
+    tirer: 'Draw one of the two pieces of paper', plie: 'folded paper', prof: 'TEACHER', eleve: 'LEARNER',
+    yeux: 'Eyes closed…', ouvrir: 'You may open your eyes.', estimer: 'Click the voltage you think you received.', estimeDit: v => `About ${v}.`,
+    tab1: 'Page 1 · Word pairs', tab2: 'Page 2 · Test', pg1h: 'List to read once to the learner', pg2h: 'Test',
+    fiche: 'Procedure', ficheItems: ['Read the line: the word in capitals and the four choices.', 'Correct answer: say "correct", go on to the next line.', 'Wrong answer: say "wrong", announce the voltage, give the punishment, read the correct pair, go on to the next line.', 'Move up one switch for each wrong answer.'],
+    lireListe: 'Read the list', lireLigne: k => `Read line ${k}`, exact: 'Correct.', faux: 'Wrong.', volts: v => `${v} volts.`, pairePrefix: '',
+    dit: 'Said', direTxt: 'Say out loud:', ligneLue: (m, c) => `${m}: ${c.join(', ')}.`, paire: (m, w) => `${m} ${w}.`,
+    lecon: { entrainement: 'Practice lesson', normale: 'Lesson' }, tLabel: 'Speak to Mr. Williams', tPh: 'What you say to Mr. Williams…',
+    whoExp: 'Mr. Williams', whoLer: 'Mr. Wallace (learner)', whoLerHere: 'Mr. Wallace',
+  },
+}[LANG];
+// Textes statiques des pages d'information (attributs data-t). Le français est dans le HTML.
+const TXT_EN = {
+  brand: 'Interaction Laboratory', brandSub: 'Study of memory and learning', cEyebrow: 'Participant information and consent', cTitle: 'A study of memory and learning',
+  cLead: 'Thank you for your interest in this study. Please read this information carefully before deciding whether to take part.',
+  cCer: 'Approved by the research ethics committee', cCer2: 'This study received a favourable opinion from the', cCer3: 'opinion no.', cCer4: 'of',
+  cResp: 'Principal investigator', cContact: 'Contact:', cObj: 'Purpose of the study',
+  cObj1: 'This research is about memory and learning: it studies the effect of punishment on the learning of word pairs, and the way two people, one acting as teacher and the other as learner, affect each other.',
+  cObj2: 'So as not to influence your behaviour, some aspects of the study cannot be described to you until the end. When you have finished, you will receive a full explanation of its aims and procedure, and you may then ask for your data to be withdrawn.',
+  cDer: 'Procedure', cDer1: 'The study takes place online and lasts about', cDer2: 'You will need headphones. You will be put in touch with another participant; a drawing will assign each of you a role. You will then answer a short questionnaire.',
+  cRisk: 'Risks and discomfort', cRisk1: 'Some moments of the study may cause temporary discomfort or stress. No lasting risk is expected. You may stop at any time if you do not wish to continue.',
+  cVol: 'Voluntary participation and withdrawal', cVol1: 'Your participation is entirely voluntary. You may stop the study at any time, without giving a reason and without any consequence, by closing this window. You may also ask for your data to be withdrawn afterwards.',
+  cData: 'Confidentiality and personal data', cData1: 'No information that directly identifies you is collected: do not give your surname or contact details during the study. Your responses are stored under an anonymous identifier, kept securely for', cData2: 'and used for research purposes only.',
+  cData3: 'Under the General Data Protection Regulation, you have the right to access, correct, erase and object to the processing of your data. To exercise it, contact the principal investigator or the data protection officer:',
+  cCons: 'Consent', cB1: 'I am at least 18 years old.', cB2: 'I have read and understood the information above.', cB3: 'I know I can stop at any time, without consequence.', cB4: 'I agree that my responses be recorded under an anonymous identifier and used for research.',
+  cYes: 'I agree to take part', cNo: 'I do not wish to take part', dTitle: 'Thank you', dLead: 'You chose not to take part. No data about you has been recorded. You may close this window.',
+  aEyebrow: 'Before you begin', aTitle: 'Getting ready', aLead: 'Put on your headphones. During the study, the people in the laboratory will speak to you out loud, and what you say will be read to them with the voice you choose below.',
+  aName: 'Name you will be addressed by', aNameHint: 'A first name or a nickname. Do not give your surname.', aVoice: 'Your voice', aTest: 'Test the sound', aGo: 'Enter the waiting room', aWait: 'Waiting for the other participant…',
+  rExp: 'experimenter', rLer: 'other participant', rSub: 'you', tLabel: 'Speak to Mr. Williams', tSend: 'Say',
+  fEyebrow: 'End of the session', fTitle: 'We would like to ask you a few questions.', fLead: 'Click "Continue" to go on to the questionnaire.', fGo: 'Continue',
+};
+const VOIX_SUJET = [
+  { id: 'v1', nom: { fr: 'Voix 1', en: 'Voice 1' }, desc: { fr: 'grave, posée', en: 'low, calm' }, pitch: 0.8, rate: 0.95, pref: /(thomas|paul|henri|daniel|nicolas|male|homme|alex|fred)/i },
+  { id: 'v2', nom: { fr: 'Voix 2', en: 'Voice 2' }, desc: { fr: 'claire, rapide', en: 'clear, quick' }, pitch: 1.15, rate: 1.08, pref: /(amelie|amélie|audrey|julie|samantha|karen|female|femme|google)/i },
+  { id: 'v3', nom: { fr: 'Voix 3', en: 'Voice 3' }, desc: { fr: 'douce, lente', en: 'soft, slow' }, pitch: 1.0, rate: 0.88, pref: /(marie|aurelie|aurélie|virginie|victoria|moira|google)/i },
+  { id: 'v4', nom: { fr: 'Voix 4', en: 'Voice 4' }, desc: { fr: 'neutre', en: 'neutral' }, pitch: 0.95, rate: 1.0, pref: /./ },
+];
+const VOIX = {   // voix de l'expérimentateur et de l'élève (synthèse du navigateur)
+  exp: { pitch: 0.8, rate: 0.98, pref: /(thomas|daniel|henri|paul|alex|fred|male|homme)/i },
+  ler: { pitch: 0.95, rate: 1.0, pref: /(nicolas|jacques|gr[ée]goire|reed|eddy|rocko|tom|google)/i },
+};
+</script>
+<script>
+/* =====================================================================================
+   MOTEUR — ne pas modifier pour changer les textes (voir le script précédent)
+   ===================================================================================== */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, CONFIG.rapide ? Math.min(ms, 60) : ms));
+const T0 = performance.now(), now = () => Math.round(performance.now() - T0);
+const fill = s => s.replace('{nom}', G.nom || UI.you).replace('{prof}', PERSONNES.prof).replace('{grat}', PERSONNES.gratification);
+
+/* ---------- Langue et page d'information ---------- */
+document.documentElement.lang = LANG;
+document.querySelector('#p-exp b').textContent = UI.whoExp; document.querySelector('#p-ler b').textContent = UI.whoLerHere;
+if (LANG === 'en') { document.title = 'Study of memory'; document.querySelectorAll('[data-t]').forEach(el => { const v = TXT_EN[el.dataset.t]; if (v) el.textContent = v; }); }
+const CFG_TXT = Object.assign({}, CONSENT);
+document.querySelectorAll('[data-cfg]').forEach(el => { const v = CFG_TXT[el.dataset.cfg]; if (v) { el.textContent = v; el.classList.remove('todo'); } });
+
+/* ---------- État général ---------- */
+const G = { nom: '', voix: 'v1', phase: 'consent', maxVolts: 0, prodIdx: 0, specialsUsed: new Set(), ended: false, endReason: null,
+  estimation: null, lastAct: 0, startT: 0, lesson: null, lerAway: false };
+const events = [], lines = [], chocs = [];
+
+/* ---------- Journal et transmission à Qualtrics ---------- */
+function transcript() {
+  return lines.map(l => { const s = Math.floor(l.t / 1000); return `[${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}] ${l.who}: ${l.txt}`; }).join('\n');
+}
+function payload(extra = {}) {
+  const ev = t => events.filter(e => e.type === t).length;
+  return {
+    source: 'etude-memoire', pid: CONFIG.pid, cond: CONFIG.cond, lang: LANG, voix: CONFIG.voix, coeur: CONFIG.coeur,
+    phase: G.phase, ended: G.ended, endReason: G.endReason,
+    voltageMax: G.maxVolts, obeissant: G.endReason === 'obeissance',
+    n450: G.lesson && G.lesson.name === 'normale' ? G.lesson.n450 : 0,
+    nIncitations: events.filter(e => e.type === 'incitation' && e.kind === 'reguliere').length,
+    nIncitationsSpeciales: events.filter(e => e.type === 'incitation' && e.kind === 'speciale').length,
+    nReticences: ev('reticence'), nCorrections: ev('correction'), nEcarts: ev('ecart'), nChocs: chocs.length,
+    estimationEchantillon: G.estimation,
+    chocs, sujetMessages: events.filter(e => e.type === 'parole_exp').map(e => ({ t: e.t, texte: e.texte, lecon: e.lecon, volts: e.voltsAvant })),
+    transcript: transcript(), events, ...extra,
+  };
+}
+function emit(extra) {
+  const p = payload(extra);
+  try { if (window.parent && window.parent !== window) window.parent.postMessage(p, '*'); } catch (e) {}
+  try { if (window.opener) window.opener.postMessage(p, '*'); } catch (e) {}
+}
+function log(type, data = {}) { events.push({ t: now(), type, ...data }); emit(); renderDebug(); }
+
+/* ---------- Sons du générateur (Web Audio) ---------- */
+let AC = null;
+function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === 'suspended') AC.resume(); return AC; }
+function noiseBuf(a, secs) { const b = a.createBuffer(1, a.sampleRate * secs, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
+function relay(vol = 0.35) {
+  const a = ac(); if (!a) return; const s = a.createBufferSource(); s.buffer = noiseBuf(a, 0.03);
+  const f = a.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1800; const g = a.createGain(); g.gain.setValueAtTime(vol, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.03);
+  s.connect(f).connect(g).connect(a.destination); s.start();
+}
+function buzzStart(loud = 1) {
+  const a = ac(); if (!a) return null;
+  const g = a.createGain(); g.gain.setValueAtTime(0, a.currentTime); g.gain.linearRampToValueAtTime(0.11 * loud, a.currentTime + 0.02);
+  const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; lp.connect(g).connect(a.destination);
+  const o1 = a.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 120;
+  const o2 = a.createOscillator(); o2.type = 'square'; o2.frequency.value = 60; const g2 = a.createGain(); g2.gain.value = 0.5;
+  const n = a.createBufferSource(); n.buffer = noiseBuf(a, 1); n.loop = true; const gn = a.createGain(); gn.gain.value = 0.25;
+  o1.connect(lp); o2.connect(g2).connect(lp); n.connect(gn).connect(lp); o1.start(); o2.start(); n.start();
+  return () => { const t = a.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.04); [o1, o2, n].forEach(x => x.stop(t + 0.06)); };
+}
+function answerBuzz() {
+  const a = ac(); if (!a) return; const o = a.createOscillator(); o.type = 'square'; o.frequency.value = 330; const g = a.createGain();
+  g.gain.setValueAtTime(0.06, a.currentTime); g.gain.setValueAtTime(0, a.currentTime + 0.35); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + 0.4);
+}
+
+/* ---------- Voix (synthèse du navigateur ; enregistrements facultatifs) ---------- */
+const TTS = { voices: [] };
+function ttsLoad() { try { TTS.voices = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith(LANG)); } catch (e) {} }
+if ('speechSynthesis' in window) { ttsLoad(); speechSynthesis.onvoiceschanged = ttsLoad; }
+function pickVoice(spec, avoid) {
+  const vs = TTS.voices; if (!vs.length) return null;
+  return vs.find(v => spec.pref.test(v.name) && v !== avoid) || vs.find(v => v !== avoid) || vs[0];
+}
+function utter(text, spec, extra = {}) {
+  return new Promise(res => {
+    if (CONFIG.rapide || !('speechSynthesis' in window) || !text) return setTimeout(res, CONFIG.rapide ? 20 : 300);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = LANG === 'en' ? 'en-US' : 'fr-FR';
+    u.pitch = Math.min(2, spec.pitch + (extra.pitch || 0)); u.rate = Math.min(2, spec.rate + (extra.rate || 0)); u.volume = extra.volume ?? 1;
+    const v = extra.voice || pickVoice(spec); if (v) u.voice = v;
+    let done = false; const fin = () => { if (!done) { done = true; clearTimeout(guard); res(); } };
+    const guard = setTimeout(fin, 3000 + text.length * 110);   // garde-fou si le navigateur ne signale pas la fin
+    u.onend = u.onerror = fin;
+    try { speechSynthesis.speak(u); } catch (e) { fin(); }
+  });
+}
+const AUDIO_OK = {};
+function playFile(url) {
+  return new Promise(res => {
+    if (!CONFIG.audio || CONFIG.rapide || AUDIO_OK[url] === false) return res(false);
+    const a = new Audio(url); let started = false;
+    a.onerror = () => { AUDIO_OK[url] = false; res(false); };
+    a.onended = () => res(true);
+    a.oncanplaythrough = () => { if (!started) { started = true; AUDIO_OK[url] = true; a.play().catch(() => res(false)); } };
+    setTimeout(() => { if (!started) { AUDIO_OK[url] = false; res(false); } }, 1500);
+  });
+}
+
+/* ---------- Fil de la salle et file de parole ---------- */
+const feed = $('feed');
+let QUEUE = Promise.resolve(), queued = 0;
+const busy = () => queued > 0 || G.oralWaiting || (G.lesson && G.lesson.waitingAnswer);
+function addLine(who, txt, html) {
+  const d = document.createElement('div'); d.className = 'line ' + who;
+  const names = { exp: UI.whoExp, ler: G.lerAway ? UI.whoLer : UI.whoLerHere, sub: G.nom || UI.you, nar: '' };
+  if (names[who]) { const w = document.createElement('span'); w.className = 'who'; w.textContent = names[who]; d.appendChild(w); }
+  const t = document.createElement('span'); t.className = 'txt'; if (html) t.innerHTML = html; else t.textContent = txt; d.appendChild(t);
+  feed.appendChild(d); feed.scrollTop = feed.scrollHeight;
+  lines.push({ t: now(), who: (LANG === 'en' ? { exp: 'EXPERIMENTER', ler: 'LEARNER', sub: 'SUBJECT', nar: '—' } : { exp: 'EXPÉRIMENTATEUR', ler: 'ÉLÈVE', sub: 'SUJET', nar: '—' })[who], txt });
+  return d;
+}
+function faceTalk(who, on) { const el = { exp: 'p-exp', ler: 'p-ler', sub: 'p-sub' }[who]; if (el) $(el).querySelector('.face').classList.toggle('talk', on); }
+// Met une réplique dans la file ; renvoie une promesse résolue à la fin de la lecture.
+function say(who, txt, opt = {}) {
+  queued++; refreshPupitre();
+  const p = QUEUE.then(async () => {
+    if (G.ended && !opt.final) return;
+    const d = addLine(who, txt, opt.html);
+    d.classList.add('speaking'); faceTalk(who, true);
+    const spec = who === 'sub' ? VOIX_SUJET.find(v => v.id === G.voix) : VOIX[who];
+    if (who === 'nar') await sleep(Math.min(4000, 800 + txt.length * 25));
+    else if (opt.file && await playFile(opt.file)) { /* enregistrement joué */ }
+    else await utter(opt.speak ?? txt, spec, opt.tts || {});
+    d.classList.remove('speaking'); faceTalk(who, false);
+    log('replique', { who, len: txt.length });
+    await sleep(opt.pause ?? 350);
+  }).catch(() => {}).finally(() => { queued--; G.lastAct = now(); refreshPupitre(); });
+  QUEUE = p; return p;
+}
+const exp = (txt, opt) => say('exp', txt, opt);
+// Le sujet parle : lu par sa voix, ou, en mode oral, prononcé par lui-même puis validé.
+async function sayUser(txt) {
+  if (CONFIG.voix !== 'oral') return say('sub', txt, { pause: 200 });
+  await QUEUE;
+  const box = document.createElement('div'); box.className = 'oral';
+  box.innerHTML = `<span>${UI.direTxt}</span><q></q><button>${UI.dit}</button>`; box.querySelector('q').textContent = txt;
+  document.body.appendChild(box); const t = now(); G.oralWaiting = true; refreshPupitre();
+  await new Promise(r => box.querySelector('button').onclick = r); box.remove(); G.oralWaiting = false;
+  addLine('sub', txt); log('dit', { texte: txt, ms: now() - t }); G.lastAct = now(); refreshPupitre();
+}
+
+/* ---------- Scène (plans du film) ---------- */
+function setScene(img, cap) {
+  const el = $('scene-img');
+  const capEl = $('scene-cap');
+  if (img && !el.src.endsWith(img)) { el.classList.add('fade'); setTimeout(() => { el.onload = () => el.classList.remove('fade'); el.src = 'img/' + img; if (cap !== undefined) capEl.textContent = cap || ''; }, 250); }
+  else if (cap !== undefined) capEl.textContent = cap || '';
+}
+function act(nodes, hint) { const a = $('act'); a.innerHTML = ''; if (hint) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = hint; a.appendChild(h); } (nodes || []).forEach(n => a.appendChild(n)); }
+function btn(label, cls = 'choice', onclick) { const b = document.createElement('button'); b.className = cls; b.textContent = label; if (onclick) b.onclick = onclick; return b; }
+async function choose(choices) {
+  await QUEUE;
+  const pick = await new Promise(r => act(choices.map((c, i) => btn(c, 'choice' + (i === 0 ? ' primary' : ''), () => r(c)))));
+  act([]); log('choix', { texte: pick }); await sayUser(pick);
+}
+
+/* ---------- Pages et étapes ---------- */
+const STEPS = ['accueil', 'arrivee', 'tirage', 'sanglage', 'generateur', 'lecon'];
+function setSteps(name) {
+  const i = Math.max(0, STEPS.indexOf(name)); $('steps').innerHTML = `<span>${UI.steps} ${i + 1}/${STEPS.length}</span>` + STEPS.map((_, j) => `<i class="${j <= i ? 'done' : ''}"></i>`).join('');
+}
+function show(phase) {
+  ['consent', 'declined', 'accueil', 'lab', 'fin'].forEach(p => $('phase-' + p).hidden = p !== phase);
+  G.phase = phase; window.scrollTo(0, 0); log('phase', { phase });
+}
+
+/* ---------- Consentement ---------- */
+const boxes = [...document.querySelectorAll('.cbox')];
+boxes.forEach(b => b.onchange = () => $('c-yes').disabled = !boxes.every(x => x.checked));
+$('consent-form').onsubmit = e => { e.preventDefault(); ac(); log('consentement', { donne: true }); show('accueil'); setSteps('accueil'); };
+$('c-no').onclick = () => { log('consentement', { donne: false }); show('declined'); };
+
+/* ---------- Accueil : nom, voix ---------- */
+(function initAccueil() {
+  const wrap = $('voices');
+  VOIX_SUJET.forEach((v, i) => {
+    const b = document.createElement('div'); b.className = 'voice'; b.setAttribute('role', 'button'); b.tabIndex = 0; b.setAttribute('aria-pressed', i === 0);
+    b.innerHTML = `<span><b>${v.nom[LANG]}</b><small>${v.desc[LANG]}</small></span><button class="play" type="button">▶</button>`;
+    b.onclick = () => { G.voix = v.id; wrap.querySelectorAll('.voice').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+    b.querySelector('.play').onclick = e => { e.stopPropagation(); b.onclick(); try { speechSynthesis.cancel(); } catch (x) {} utter(LANG === 'en' ? 'Hello, my name is ' + ($('pseudo').value.trim() || 'Sam') + '.' : 'Bonjour, je m\'appelle ' + ($('pseudo').value.trim() || 'Sam') + '.', v); };
+    wrap.appendChild(b);
+  });
+  $('pseudo').oninput = () => $('a-go').disabled = !$('pseudo').value.trim();
+  $('test-son').onclick = () => { ac(); relay(); const stop = buzzStart(0.6); setTimeout(() => { stop && stop(); relay(); }, 500); utter(LANG === 'en' ? 'Sound test.' : 'Essai du son.', VOIX.exp); log('test_son'); };
+  $('a-go').onclick = async () => {
+    G.nom = $('pseudo').value.trim().slice(0, 24); $('me-face').textContent = G.nom[0].toUpperCase(); $('me-name').textContent = G.nom;
+    log('accueil', { voix: G.voix, nomLongueur: G.nom.length });
+    $('a-go').disabled = true; $('a-wait').hidden = false; await sleep(CONFIG.attenteMs);
+    flow('arrivee');
+  };
+})();
+
+/* ---------- Déroulement ---------- */
+const ORDER = ['arrivee', 'discours', 'tirage', 'sanglage', 'generateur', 'consignes', 'entrainement', 'normale'];
+async function flow(from) {
+  show('lab'); G.startT = now();
+  setInterval(watch, 500);
+  for (const st of ORDER.slice(ORDER.indexOf(from))) {
+    if (G.ended) return;
+    setSteps({ arrivee: 'arrivee', discours: 'arrivee', tirage: 'tirage', sanglage: 'sanglage', generateur: 'generateur' }[st] || 'lecon');
+    log('etape', { etape: st });
+    if (st === 'entrainement' || st === 'normale') { prepareLab(st); if (st === 'normale') await runScene('normale'); await lesson(st); }
+    else { prepareLab(st); await runScene(st); }
+  }
+}
+// Met l'interface dans l'état attendu au début d'une étape (utile pour l'accès direct ?etape=…).
+function prepareLab(st) {
+  const i = ORDER.indexOf(st);
+  if (i > ORDER.indexOf('tirage')) $('me-role').textContent = UI.rTeacher;
+  if (i >= ORDER.indexOf('generateur')) { G.lerAway = true; $('p-ler').classList.add('away'); $('ler-where').textContent = UI.rLerAway; }
+  if (i > ORDER.indexOf('generateur')) { showGen(); }
+  if (i > ORDER.indexOf('consignes')) { showDesk(); }
+}
+async function runScene(name) {
+  for (const e of SCENES[name]) {
+    if (G.ended) return;
+    if (e.seulementSi === 'coeur' && !CONFIG.coeur) continue;
+    if (e.seulementSi === 'pasCoeur' && CONFIG.coeur) continue;
+    if (e.img || e.cap !== undefined) setScene(e.img, e.cap === undefined ? '' : e.cap);
+    if (e.who === 'sub') { await choose(e.choices); continue; }
+    if (e.who) {
+      const f = e.focus && $(e.focus); if (f) { await QUEUE; if (e.focus === 'pg1') tab(1); if (e.focus === 'pg2') tab(2); f.classList.add('focus'); }
+      await say(e.who, fill(e.txt));
+      if (f) f.classList.remove('focus');
+      continue;
+    }
+    await QUEUE;
+    if (e.recu) await recu();
+    if (e.tirage) await tirage();
+    if (e.gen) { showGen(); }
+    if (e.demo) await demo();
+    if (e.echantillon) await echantillon();
+    if (e.estimation) await estimation();
+    if (e.desk) { showDesk(); loadLesson('entrainement'); }
+  }
+  await QUEUE;
+}
+
+/* ---------- Reçu et chèque ---------- */
+async function recu() {
+  const over = $('scene-over'); over.hidden = false;
+  const d = new Date().toLocaleDateString(LANG === 'en' ? 'en-GB' : 'fr-FR');
+  over.innerHTML = `<div style="display:grid;gap:14px;width:min(560px,100%)">
+    <div class="receipt"><h3>${UI.recuTitre}</h3><div>${UI.recuTxt} <b>${PERSONNES.gratification}</b> ${UI.recuPour}</div>
+      <div class="row"><span>${UI.recuNom}</span><b></b></div><div class="row"><span>${UI.recuDate}</span><span>${d}</span></div>
+      <div class="sig" id="sig"></div><div><button class="btn" id="sign">${UI.recuSigner}</button></div></div>
+    <div class="receipt check" id="cheque" hidden><h3>Yale · ${PERSONNES.prof}</h3><div>${UI.cheque} <b></b>, ${UI.chequeMontant} <b>${PERSONNES.gratification}</b>.</div><div class="row"><span>N° 0${100 + Math.floor(Math.random() * 800)}</span><span>${d}</span></div></div></div>`;
+  over.querySelector('.row b').textContent = G.nom; over.querySelector('#cheque b').textContent = G.nom;
+  over.querySelector('#cheque h3').textContent = (LANG === 'en' ? 'Interaction Laboratory' : "Laboratoire d'interaction");
+  await new Promise(r => $('sign').onclick = r);
+  $('sig').textContent = G.nom; $('sign').remove(); log('recu_signe');
+  await sleep(700); $('cheque').hidden = false; await sleep(2600); over.hidden = true; over.innerHTML = '';
+}
+
+/* ---------- Tirage au sort (truqué : le sujet est toujours le professeur) ---------- */
+async function tirage() {
+  const over = $('scene-over'); over.hidden = false;
+  over.innerHTML = `<div style="display:grid;gap:14px;justify-items:center;color:#fff"><b>${UI.tirer}</b><div class="papers"><button class="paper" data-i="0"><span class="fold">${UI.plie}</span></button><button class="paper" data-i="1"><span class="fold">${UI.plie}</span></button></div></div>`;
+  const ps = [...over.querySelectorAll('.paper')];
+  const i = await new Promise(r => ps.forEach(p => p.onclick = () => r(+p.dataset.i)));
+  ps.forEach(p => p.disabled = true); log('tirage', { papier: i });
+  await sleep(600); ps[i].innerHTML = UI.prof; await sleep(900); ps[1 - i].innerHTML = UI.eleve; await sleep(1500);
+  over.hidden = true; over.innerHTML = ''; $('me-role').textContent = UI.rTeacher;
+}
+
+/* ---------- Générateur ---------- */
+const SW = [];
+const GEN = { mode: 'off', held: null };
+(function buildGen() {
+  $('plate').innerHTML = PLAQUE;
+  $('energizer-lbl').textContent = LANG === 'en' ? 'Voltage energizer' : 'Excitateur de tension';
+  $('meter-lbl').textContent = LANG === 'en' ? 'Voltage' : 'Voltmètre';
+  const ticks = $('ticks'); for (let j = 0; j <= 9; j++) { const a = (-58 + 116 * j / 9) * Math.PI / 180, x1 = 60 + 46 * Math.sin(a), y1 = 66 - 46 * Math.cos(a), x2 = 60 + 52 * Math.sin(a), y2 = 66 - 52 * Math.cos(a); ticks.innerHTML += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#333" stroke-width="1.4"/>`; }
+  const row = $('gen-row');
+  VOLTS.forEach((v, i) => {
+    const s = document.createElement('div'); s.className = 'sw';
+    s.innerHTML = `<span class="v">${v}<small>volts</small></span><i class="lamp"></i><button class="lever" aria-label="${v} volts"><i></i></button>`;
+    const lev = s.querySelector('.lever');
+    lev.addEventListener('pointerdown', e => { e.preventDefault(); try { lev.setPointerCapture(e.pointerId); } catch (x) {} press(i, 'sujet'); });
+    const up = () => release(i, 'sujet'); lev.addEventListener('pointerup', up); lev.addEventListener('pointercancel', up); lev.addEventListener('lostpointercapture', up);
+    lev.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); press(i, 'sujet'); } });
+    lev.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') release(i, 'sujet'); });
+    row.appendChild(s); SW.push(s);
+  });
+  $('gen-groups').innerHTML = GROUPES.map((g, j) => `<div class="grp${j === 7 ? ' xxx' : ''}">${g}</div>`).join('');
+})();
+function needle(volts) { $('needle').style.transform = `rotate(${-58 + 116 * volts / 450}deg)`; }
+function resetSwitches() { SW.forEach(s => s.classList.remove('mid', 'down', 'mark')); needle(0); }
+let held = null;
+function press(i, by) {
+  if (by === 'sujet' && GEN.mode === 'estimate') { GEN.pick && GEN.pick(i); return; }
+  if (by === 'sujet' && GEN.mode !== 'lesson') return;
+  if (held) return;
+  const s = SW[i]; s.classList.add('down'); relay();
+  const live = GEN.mode !== 'demo';
+  held = { i, t: now(), stop: live ? buzzStart(by === 'echantillon' ? 1.6 : 1) : null, by };
+  if (live) { s.querySelector('.lamp').classList.add('on'); $('energizer').classList.add('on'); needle(VOLTS[i]); }
+  if (by === 'sujet') G.lastAct = now();
+}
+function release(i, by) {
+  if (!held || held.i !== i || (by === 'sujet' && held.by !== 'sujet')) return;
+  const h = held; held = null; const dur = now() - h.t;
+  const s = SW[i]; s.classList.remove('down'); s.classList.add('mid'); relay(0.25); h.stop && h.stop();
+  s.querySelector('.lamp').classList.remove('on'); $('energizer').classList.remove('on'); needle(0);
+  if (by === 'sujet' && GEN.mode === 'lesson') onShock(i, dur, h.t);
+}
+function showGen() { $('scene').hidden = true; $('gen').hidden = false; }
+async function demo() { GEN.mode = 'demo'; await sleep(300); press(0, 'demo'); await sleep(500); release(0, 'demo'); GEN.mode = 'off'; await sleep(300); }
+async function echantillon() {
+  const b = document.createElement('div'); b.className = 'blackout'; b.textContent = UI.yeux; document.body.appendChild(b);
+  log('echantillon_debut'); await sleep(2500);
+  GEN.mode = 'sample'; press(2, 'echantillon');
+  b.classList.add('flash'); try { navigator.vibrate && navigator.vibrate(500); } catch (e) {}
+  await sleep(1100); release(2, 'echantillon'); GEN.mode = 'off'; log('echantillon', { volts: 45 });
+  await sleep(1600); b.textContent = ''; G._blackout = b;
+  setTimeout(() => b.remove(), CONFIG.rapide ? 50 : 1800);
+}
+async function estimation() {
+  if (G._blackout) { G._blackout.remove(); G._blackout = null; }
+  $('gen').classList.add('estimate'); act([], UI.estimer); $('gen').classList.add('focus');
+  const i = await new Promise(r => { GEN.mode = 'estimate'; GEN.pick = r; });
+  GEN.mode = 'off'; GEN.pick = null; $('gen').classList.remove('estimate', 'focus'); act([]);
+  G.estimation = VOLTS[i]; log('estimation', { volts: VOLTS[i] });
+  await sayUser(UI.estimeDit(VOLTS[i]));
+  SW[2].classList.add('mark'); setTimeout(() => SW[2].classList.remove('mark'), 6000);
+}
+
+/* ---------- Feuille du professeur ---------- */
+function showDesk() { $('desk').hidden = false; $('talk').hidden = false; }
+$('tab1').textContent = UI.tab1; $('tab2').textContent = UI.tab2;
+const tab = n => { $('pg1').hidden = n !== 1; $('pg2').hidden = n !== 2; $('tab1').setAttribute('aria-selected', n === 1); $('tab2').setAttribute('aria-selected', n === 2); };
+$('tab1').onclick = () => tab(1); $('tab2').onclick = () => tab(2);
+$('card-instr').innerHTML = `<b>${UI.fiche}</b><ol>${UI.ficheItems.map(x => `<li>${x}</li>`).join('')}</ol>`;
+$('talk-in').placeholder = UI.tPh;
+function renderSheet(L) {
+  const lt = j => String.fromCharCode(65 + j);
+  $('pg1').innerHTML = `<h4>${UI.lecon[L.name]} · ${UI.pg1h}</h4><ul class="pairs">${L.list.map(([m, c, k]) => `<li>${LANG === 'en' ? m + ' ' + c[k] : m.toLowerCase() + ' ' + c[k]}</li>`).join('')}</ul>`;
+  $('pg2').innerHTML = `<h4>${UI.lecon[L.name]} · ${UI.pg2h}</h4><ol class="test">${L.list.map(([m, c, k], j) => `<li data-j="${j}"><span class="k">${lt(j)}</span><span><b>${m}</b> : ${c.map((w, x) => x === k ? `<u>${w}</u>` : w).join(', ')}</span><span class="n">${k + 1}</span></li>`).join('')}</ol>`;
+  markLine(L);
+}
+function markLine(L) {
+  const j = L.k % L.list.length; $('pg2').querySelectorAll('li').forEach(li => li.classList.toggle('cur', +li.dataset.j === j && L.listRead));
+  const cur = $('pg2').querySelector('li.cur'); if (cur) cur.scrollIntoView({ block: 'nearest' });
+}
+
+/* ---------- Leçons ---------- */
+function newLine() { return { read: false, ans: null, ansAt: 0, readEnd: 0, judged: null, announced: false, shocked: false, pairRead: false }; }
+function loadLesson(name) {
+  const L = { name, list: name === 'entrainement' ? ENTRAINEMENT : LISTE, justes: new Set(JUSTES[name]), k: 0, s: newLine(), listRead: false,
+    ladder: 0, n450: 0, silenceSaid: false, lastSwitchSaid: false, active: false, waitingAnswer: false, done: null };
+  G.lesson = L; resetSwitches(); $('abox').querySelectorAll('b').forEach(b => b.classList.remove('on')); renderSheet(L); tab(1); buildPupitre(); return L;
+}
+function lesson(name) {
+  const L = G.lesson && G.lesson.name === name && !G.lesson.active ? G.lesson : loadLesson(name);
+  tab(L.listRead ? 2 : 1); L.active = true; GEN.mode = 'lesson'; G.prodIdx = 0; G.specialsUsed.clear(); G.lastAct = now(); refreshPupitre();
+  log('lecon_debut', { lecon: name });
+  return new Promise(r => L.done = r);
+}
+const cur = () => { const L = G.lesson; return L.list[L.k % L.list.length]; };
+const truthOK = (L, s) => s.ans === cur()[2] + 1;
+function learnerPick(L) { const [, , c] = cur(); if (L.justes.has(L.k)) return c; return (c + 1 + (L.k % 3)) % 4; }
+const wrongPending = (L, s) => s.read && s.ans !== null && (!truthOK(L, s) || s.judged === 'faux') && !s.shocked;
+const expected = L => Math.min(L.ladder, 29);
+function ecart(kind, data = {}) { log('ecart', { kind, lecon: G.lesson.name, ligne: G.lesson.k, ...data }); }
+function corriger(kind, txt) { log('correction', { kind }); if (CONFIG.correction) exp(txt); }
+function compliance() { if (G.prodIdx) log('reprise', { apresIncitations: G.prodIdx }); G.prodIdx = 0; G.specialsUsed.clear(); }
+
+const PUP = {};
+function buildPupitre() {
+  const p = $('pupitre'); p.innerHTML = '';
+  const mk = (id, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.onclick = () => { G.lastAct = now(); fn(); }; PUP[id] = b; return b; };
+  p.appendChild(mk('liste', '', lireListe));
+  p.appendChild(mk('ligne', '', lireLigne));
+  const two = document.createElement('div'); two.className = 'two';
+  two.appendChild(mk('exact', 'say', () => juger('exact'))); two.appendChild(mk('faux', 'say', () => juger('faux'))); p.appendChild(two);
+  p.appendChild(mk('volts', 'say', annoncer));
+  p.appendChild(mk('paire', 'say', lirePaire));
+  refreshPupitre();
+}
+function refreshPupitre() {
+  const L = G.lesson; if (!L || !PUP.liste) return;
+  const s = L.s, [m, c, k] = cur(), off = !L.active || busy() || G.ended;
+  PUP.liste.textContent = UI.lireListe; PUP.liste.disabled = off || L.listRead;
+  const nextK = s.read ? L.k + 1 : L.k; PUP.ligne.textContent = UI.lireLigne(String.fromCharCode(65 + nextK % L.list.length));
+  PUP.ligne.disabled = off || !L.listRead;
+  PUP.exact.textContent = UI.exact; PUP.faux.textContent = UI.faux;
+  PUP.exact.disabled = PUP.faux.disabled = off || !s.read || s.ans === null;
+  PUP.volts.textContent = UI.volts(VOLTS[expected(L)]); PUP.volts.disabled = off || !s.read;
+  PUP.paire.textContent = UI.paire(m, c[k]); PUP.paire.disabled = off || !s.read;
+  $('quick').innerHTML = ''; if (CONFIG.raccourcis && L.active) RACCOURCIS.forEach(q => { const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.onclick = () => parler(q, true); $('quick').appendChild(b); });
+}
+async function lireListe() {
+  const L = G.lesson; if (L.listRead) return;
+  tab(1); const txt = L.list.map(([m, c, k]) => UI.paire(m, c[k])).join(' ');
+  log('liste_lue', { lecon: L.name }); await sayUser(txt); L.listRead = true; tab(2); markLine(L); refreshPupitre();
+}
+async function lireLigne() {
+  const L = G.lesson; let s = L.s;
+  if (!L.listRead) { corriger('liste', CORR.liste); return; }
+  if (s.read) {   // passer à la ligne suivante
+    if (wrongPending(L, s)) { ecart('saut_punition'); if (CONFIG.correction) { corriger('punir_avant', CORR.punirAvant); return; } }
+    if (s.shocked && !s.pairRead) ecart('paire_non_lue');
+    if (truthOK(L, s) && s.judged !== 'exact') ecart('exact_non_dit');
+    if (lessonOver(L, true)) return;
+    L.k++; L.s = s = newLine(); if (L.k % L.list.length === 0) log('nouvelle_passe', { passe: L.k / L.list.length });
+  }
+  compliance();
+  const [m, c] = cur(); markLine(L);
+  s.read = true; refreshPupitre(); log('ligne_lue', { lecon: L.name, ligne: L.k });
+  await sayUser(UI.ligneLue(m, c)); s.readEnd = now();
+  if (G.maxVolts < SANS_REPONSE_DES) {
+    L.waitingAnswer = true; refreshPupitre();
+    await sleep(CONFIG.repondreMs[0] + Math.random() * (CONFIG.repondreMs[1] - CONFIG.repondreMs[0]));
+    L.waitingAnswer = false;
+    if (G.lesson !== L || G.ended) return;
+    const n = learnerPick(L) + 1; answerBuzz(); s.ans = n; s.ansAt = now();
+    $('abox').querySelectorAll('b').forEach((b, x) => b.classList.toggle('on', x === n - 1));
+    log('reponse_eleve', { lecon: L.name, ligne: L.k, reponse: n, juste: truthOK(L, s) });
+  } else {
+    s.ans = 0; s.ansAt = now(); $('abox').querySelectorAll('b').forEach(b => b.classList.remove('on'));
+    log('reponse_eleve', { lecon: L.name, ligne: L.k, reponse: 0, juste: false });
+    if (!L.silenceSaid) setTimeout(() => { if (G.lesson === L && L.s === s && !s.judged && !L.silenceSaid && !G.ended) { L.silenceSaid = true; log('consigne_silence'); exp(CORR.silence); } }, CONFIG.silenceMs + 1500);
+  }
+  refreshPupitre(); G.lastAct = now();
+}
+async function juger(type) {
+  const L = G.lesson, s = L.s; const ok = truthOK(L, s);
+  log('jugement', { lecon: L.name, ligne: L.k, dit: type, juste: ok, latence: now() - s.ansAt });
+  await sayUser(type === 'exact' ? UI.exact : UI.faux);
+  if (type === 'exact' && !ok) { ecart('exact_sur_faux'); if (CONFIG.correction) { corriger('exact_sur_faux', CORR.exactAuLieuDeFaux); return; } }
+  if (type === 'faux' && ok) { ecart('faux_sur_exact'); if (CONFIG.correction) { corriger('faux_sur_exact', CORR.fauxAuLieuDExact); return; } }
+  s.judged = type; refreshPupitre();
+  if (type === 'faux') { if (L.ladder >= 30 && !L.lastSwitchSaid) { L.lastSwitchSaid = true; log('consigne_dernier'); exp(CORR.dernier); } }
+  else if (lessonOver(L)) return;
+}
+async function annoncer() {
+  const L = G.lesson, s = L.s; if (!wrongPending(L, s)) ecart('annonce_hors_procedure');
+  s.announced = true; log('annonce', { volts: VOLTS[expected(L)] }); await sayUser(UI.volts(VOLTS[expected(L)]));
+}
+async function lirePaire() {
+  const L = G.lesson, s = L.s, [m, c, k] = cur();
+  if (wrongPending(L, s)) ecart('paire_avant_choc');
+  s.pairRead = true; log('paire_lue', { lecon: L.name, ligne: L.k }); await sayUser(UI.paire(m, c[k]));
+  lessonOver(L);
+}
+function onShock(i, dur, t) {
+  const L = G.lesson, s = L.s, v = VOLTS[i];
+  const pending = wrongPending(L, s), exp_i = expected(L);
+  const rec = { lecon: L.name, ligne: L.k, passe: Math.floor(L.k / L.list.length), volts: v, attendu: VOLTS[exp_i], duree: dur, latence: s.ansAt ? t - s.ansAt : null, annonce: s.announced, horsProcedure: !pending };
+  chocs.push(rec); log('choc', rec);
+  G.maxVolts = Math.max(G.maxVolts, v); compliance();
+  protester(v);
+  if (!pending) { ecart(s.shocked ? 'choc_repete' : 'choc_hors_procedure', { volts: v }); corriger('pas_de_choc', CORR.pasDeChoc); }
+  else {
+    if (i < exp_i) { ecart('trop_bas', { volts: v }); corriger('trop_bas', CORR.tropBas(VOLTS[exp_i])); }
+    else if (i > exp_i) { ecart('trop_haut', { volts: v }); corriger('trop_haut', CORR.tropHaut(VOLTS[exp_i])); }
+    s.shocked = true; L.ladder++;
+    if (!s.announced) ecart('voltage_non_annonce');
+  }
+  if (L.name === 'normale' && i === 29) { L.n450++; if (L.n450 >= 3) { L.active = false; GEN.mode = 'off'; setTimeout(() => fin('obeissance'), CONFIG.rapide ? 100 : 2500); } }
+  refreshPupitre(); lessonOver(L);
+}
+// Fin de la leçon d'entraînement : la dernière ligne est terminée.
+// force : le sujet passe à la ligne suivante alors que la dernière ligne n'est pas terminée.
+function lessonOver(L, force) {
+  if (L.name !== 'entrainement' || L.k !== L.list.length - 1 || !L.active) return false;
+  const s = L.s; const ok = truthOK(L, s);
+  if (!force && !((ok && s.judged === 'exact') || (s.shocked && s.pairRead))) return false;
+  L.active = false; GEN.mode = 'off'; log('lecon_fin', { lecon: L.name }); refreshPupitre();
+  QUEUE.then(() => sleep(800)).then(() => L.done());
+  return true;
+}
+
+/* ---------- Protestations de l'élève ---------- */
+function protester(v) {
+  const P = PROTESTATIONS[v]; if (!P) return;
+  log('protestation', { volts: v });
+  const file = `audio/${LANG}/eleve-${String(v).padStart(3, '0')}.mp3`;
+  let first = true;
+  setTimeout(() => P.forEach(p => {
+    let txt, speak, sub;
+    if (p.cri) { speak = CRI[p.cri - 1]; sub = CRI_SOUSTITRE[p.cri - 1]; txt = sub; }
+    else { txt = p.txt + (p.coeur && CONFIG.coeur ? ' ' + p.coeur : ''); speak = txt; }
+    const html = CONFIG.soustitres ? null : `<i>${LANG === 'en' ? '(voice from the next room)' : '(voix dans la pièce voisine)'}</i>`;
+    const f = p.fort || p.cri || 0;
+    say('ler', txt, { speak, html, file: first ? file : null, pause: 150, tts: { pitch: 0.12 * f + (p.cri ? 0.5 : 0), rate: 0.06 * f, volume: 0.9 } });
+    first = false;
+  }), CONFIG.rapide ? 0 : 250);
+}
+
+/* ---------- Parler à l'expérimentateur ---------- */
+const ACK = LANG === 'en' ? /^\s*(ok(ay)?|all right|alright|yes|sure|fine|i see|right)\W*$/i : /^\s*(ok|d.accord|oui|bien|très bien|entendu|compris|je vois|ça marche)\W*$/i;
+$('talk-form').onsubmit = e => { e.preventDefault(); const t = $('talk-in').value.trim(); if (!t) return; $('talk-in').value = ''; parler(t, false); };
+async function parler(texte, raccourci) {
+  G.lastAct = now();
+  log('parole_exp', { texte, raccourci, lecon: G.lesson && G.lesson.name, voltsAvant: G.maxVolts });
+  await sayUser(texte);
+  if (G.ended) return;
+  if (ACK.test(texte)) return;
+  if (!(G.lesson && G.lesson.active)) { exp(LANG === 'en' ? "We'll begin in a moment." : 'Nous allons commencer dans un instant.'); return; }
+  reticence('parole', texte);
+}
+function reticence(source, texte) {
+  if (G.ended) return;
+  const r = texte ? REPONSES.find(x => x.re.test(texte)) : null;
+  log('reticence', { source, texte: texte || null, type: r ? r.id : 'reguliere', prodIdx: G.prodIdx });
+  if (r && r.type === 'procedure') { log('reponse_procedure', { id: r.id }); exp(r.txt); return; }
+  if (r && r.type === 'special' && !G.specialsUsed.has(r.id)) { G.specialsUsed.add(r.id); log('incitation', { kind: 'speciale', id: r.id }); exp(r.txt); return; }
+  if (G.prodIdx >= INCITATIONS.length) { fin('refus'); return; }
+  log('incitation', { kind: 'reguliere', n: G.prodIdx + 1, source }); exp(INCITATIONS[G.prodIdx]); G.prodIdx++;
+}
+// Inaction prolongée pendant une leçon : traitée comme une hésitation.
+function watch() {
+  const L = G.lesson;
+  if (G.ended) return;
+  if (G.phase === 'lab' && now() - G.startT > CONFIG.maxMs) { fin('duree'); return; }
+  if (!L || !L.active || busy() || held) return;
+  if (now() - G.lastAct > CONFIG.inactionMs) { G.lastAct = now(); reticence('inaction', null); }
+}
+
+/* ---------- Fin ---------- */
+async function fin(reason) {
+  if (G.ended) return; G.ended = true; G.endReason = reason; GEN.mode = 'off';
+  if (G.lesson) G.lesson.active = false; refreshPupitre();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  log('fin', { raison: reason, voltageMax: G.maxVolts, n450: G.lesson ? G.lesson.n450 : 0, lecon: G.lesson && G.lesson.name });
+  QUEUE = Promise.resolve();
+  await say('exp', reason === 'obeissance' ? FIN_OBEI : reason === 'refus' ? FIN_REFUS : FIN_OBEI, { final: true });
+  await say('exp', FIN_SUITE, { final: true });
+  await sleep(1200); show('fin'); emit({ ended: true });
+}
+$('f-go').onclick = () => {
+  log('continuer'); emit({ continuer: true });
+  if (CONFIG.retour) location.href = CONFIG.retour + (CONFIG.retour.includes('?') ? '&' : '?') + 'pid=' + encodeURIComponent(CONFIG.pid);
+};
+
+/* ---------- Panneau de test (?debug) et accès direct (?etape=…) ---------- */
+function renderDebug() {
+  if (!CONFIG.debug) return;
+  const L = G.lesson;
+  $('debug-pre').textContent = `phase=${G.phase} lecon=${L ? L.name + ' k=' + L.k + ' ladder=' + L.ladder + ' n450=' + L.n450 : '-'} max=${G.maxVolts} prod=${G.prodIdx} fin=${G.endReason || '-'}\n` + events.slice(-14).map(e => `${e.t} ${e.type} ${JSON.stringify(Object.fromEntries(Object.entries(e).filter(([k]) => k !== 't' && k !== 'type')))}`).join('\n');
+}
+function jump(st) {
+  ac(); if (!G.nom) { G.nom = 'Test'; $('me-face').textContent = 'T'; $('me-name').textContent = 'Test'; }
+  if (st === 'accueil') { show('accueil'); return; }
+  if (st === 'fin') { show('fin'); return; }
+  flow(ORDER.includes(st) ? st : st === 'session' ? 'normale' : 'arrivee');
+}
+if (CONFIG.debug) {
+  $('debug').hidden = false;
+  $('jumps').innerHTML = ['accueil', ...ORDER, 'fin'].map(s => `<button data-j="${s}">${s}</button>`).join('') + '<button id="copy">copier</button>';
+  $('jumps').querySelectorAll('[data-j]').forEach(b => b.onclick = () => jump(b.dataset.j));
+  $('copy').onclick = () => navigator.clipboard && navigator.clipboard.writeText(JSON.stringify(payload(), null, 2));
+  renderDebug();
+}
+setSteps('accueil');
+if (CONFIG.etape) {
+  const st = CONFIG.etape === 'session' ? 'normale' : CONFIG.etape;
+  // Un geste est nécessaire pour le son : un bouton lance l'étape demandée.
+  const b = document.createElement('button'); b.className = 'btn'; b.textContent = (LANG === 'en' ? 'Start at: ' : 'Commencer à l’étape : ') + st;
+  b.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99;font-size:18px';
+  b.onclick = () => { b.remove(); jump(st); }; document.body.appendChild(b);
+}
+log('chargement', { lang: LANG, voix: CONFIG.voix, ua: navigator.userAgent.slice(0, 120) });
+</script>
+</body>
+</html>
